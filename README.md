@@ -21,6 +21,7 @@ Este é um projeto real, desenvolvido sob demanda para um cliente, e vai ser usa
 - **Pagamento parcial**, com validação para não pagar mais do que falta.
 - **Marcar título como pago** e **marcar tudo como pago** (todos os títulos em aberto do cliente de uma vez).
 - **Nova compra** para cliente já cadastrado: quem quitou tudo continua salvo, com o histórico, sem precisar de novo cadastro.
+- **Busca de cliente pelo nome**, na página inicial e na lista: ignora acento e maiúscula ("jose" acha "José"), acha pedaço do nome e não liga pra ordem das palavras. Se ninguém for encontrado, oferece cadastrar como cliente novo. Cliente que já quitou tudo continua na base: é só buscar e usar "+ Nova compra".
 - **Risco de inadimplência**: cada cliente recebe uma nota de 0 a 100 e uma etiqueta (baixo / médio / alto) com o motivo em uma frase, na lista e na ficha.
 - Mensagens de sucesso/erro, confirmação antes de marcar como pago e proteção contra clique duplo.
 
@@ -132,7 +133,9 @@ Pré-requisitos: Node.js 20+ e um projeto no [Supabase](https://supabase.com) (o
    - `SUPABASE_SERVICE_ROLE_KEY` → chave **service_role** (não a "anon")
 4. `npm run dev` e abra <http://localhost:3000>
 
-Para rodar os testes do motor de risco: `npm test`.
+Testes automáticos (motor de risco e busca): `npm test`.
+
+**Dados fictícios para testar:** `npm run seed:teste` cria 10 clientes de mentira, cada um numa situação diferente do motor de risco (cliente novo, antigo que já quitou tudo, atrasado, com pagamento parcial...). Eles são marcados com o segmento `TESTE` e telefones inválidos (`(00) 00000-00XX`), e `npm run seed:teste:remover` apaga só eles, sem tocar nos clientes reais. Os comandos leem o `.env.local`.
 
 ## Estrutura do projeto
 
@@ -153,7 +156,10 @@ lib/
   util.js                     Moeda, datas, centavos, "hoje" no fuso de Brasília
   risco.js                    Motor de risco (função pura)
   risco.test.js               Testes do motor de risco
+  util.test.js                Testes da busca por nome
   carregar-risco.js           Busca os dados no Supabase e calcula o risco dos clientes
+scripts/
+  seed-teste.mjs              Cria/remove os clientes fictícios de teste
 supabase/
   schema.sql                  Schema completo (tabelas, view, RLS)
   correcao-fuso.sql           Correção de fuso para bancos já existentes
