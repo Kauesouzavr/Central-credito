@@ -2,7 +2,9 @@ import { Fragment } from 'react';
 import Link from 'next/link';
 import { getSupabaseServerClient } from '../../../lib/supabase-server';
 import { FORMAS_PAGAMENTO, formatarData, formatarMoeda, paraCentavos } from '../../../lib/util';
+import { carregarRiscos } from '../../../lib/carregar-risco';
 import BotaoAcao from '../../componentes/BotaoAcao';
+import EtiquetaRisco from '../../componentes/EtiquetaRisco';
 import { marcarTituloComoPago, marcarTudoComoPago, registrarPagamentoParcial } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -39,6 +41,9 @@ export default async function FichaCliente({ params, searchParams }) {
     .eq('cliente_id', id)
     .order('data_vencimento', { ascending: true });
 
+  const { riscoDe, erro: erroRisco } = await carregarRiscos(supabase, { clienteId: id });
+  const risco = riscoDe(id);
+
   const abertos = (titulos || []).filter((t) => t.status !== 'pago');
   const totalAberto =
     abertos.reduce((soma, t) => soma + paraCentavos(t.valor_restante), 0) / 100;
@@ -56,6 +61,29 @@ export default async function FichaCliente({ params, searchParams }) {
 
       {ok && <p className="sucesso">{ok}</p>}
       {erro && <p className="erro">{erro}</p>}
+
+      {erroRisco && <p className="erro">Não foi possível calcular o risco: {erroRisco}</p>}
+
+      {risco && (
+        <section className="caixa-risco">
+          <p>
+            <EtiquetaRisco risco={risco} /> Nota {Math.floor(risco.nota)} de 100
+          </p>
+          <ul>
+            {risco.motivos.map((motivo) => (
+              <li key={motivo}>{motivo}</li>
+            ))}
+          </ul>
+          <details>
+            <summary>Como a nota foi calculada</summary>
+            <p>
+              Atraso atual: {risco.partes.atraso} de {risco.maximos.atraso} · Perfil do cliente:{' '}
+              {risco.partes.perfil} de {risco.maximos.perfil} · Mudança de padrão:{' '}
+              {risco.partes.mudanca} de {risco.maximos.mudanca}
+            </p>
+          </details>
+        </section>
+      )}
 
       <div className="cabecalho">
         <h2>Títulos</h2>

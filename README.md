@@ -4,7 +4,7 @@
 
 *English summary: a web app to manage store-credit ("pay later") sales — customers, receivables, partial payments, default-risk scoring and, on the roadmap, WhatsApp collection reminders and a cash-flow forecast. Built with Next.js (App Router + Server Actions) and Supabase (PostgreSQL).*
 
-**Status:** 🚧 em desenvolvimento — Fases 1 a 2b concluídas; Fase 3 (motor de risco) em andamento.
+**Status:** 🚧 em desenvolvimento — Fases 1 a 3 concluídas; próxima: Fase 4 (tela "Hoje").
 
 ---
 
@@ -21,7 +21,20 @@ Este é um projeto real, desenvolvido sob demanda para um cliente, e vai ser usa
 - **Pagamento parcial**, com validação para não pagar mais do que falta.
 - **Marcar título como pago** e **marcar tudo como pago** (todos os títulos em aberto do cliente de uma vez).
 - **Nova compra** para cliente já cadastrado: quem quitou tudo continua salvo, com o histórico, sem precisar de novo cadastro.
+- **Risco de inadimplência**: cada cliente recebe uma nota de 0 a 100 e uma etiqueta (baixo / médio / alto) com o motivo em uma frase, na lista e na ficha.
 - Mensagens de sucesso/erro, confirmação antes de marcar como pago e proteção contra clique duplo.
+
+## Como o risco é calculado
+
+Nota = **atraso atual** (até 60) + **perfil do cliente** (até 20) + **mudança de padrão** (peso configurável, 20 por padrão).
+
+| Parte | Regra |
+|---|---|
+| Atraso atual | Título em aberto mais atrasado: cada dia vale `60 ÷ limite_atraso` pontos, até 60. |
+| Perfil | Cliente **novo** (nada quitado ainda): 10 pontos. Cliente **antigo**: até 20, conforme a proporção dos títulos quitados que foram pagos com atraso (sempre em dia = 0). |
+| Mudança de padrão | Soma o peso se o cliente já quitou 3+ títulos, todos em dia, e agora atrasou. |
+
+Alto a partir de 55 pontos, médio a partir de 25 (cortes em `configuracoes`). Com os valores iniciais, um cliente novo vira médio com 4 dias de atraso e alto com 12; um antigo que sempre pagou em dia, com 7 e 14. A fórmula é uma função pura em [`lib/risco.js`](lib/risco.js), coberta por testes (`npm test`), e os parâmetros ficam no banco para serem ajustados com dados reais (Fase 9).
 
 ## Decisões técnicas (e por quê)
 
@@ -35,6 +48,7 @@ Este é um projeto real, desenvolvido sob demanda para um cliente, e vai ser usa
 | **"Hoje" no fuso de Brasília** (`America/Sao_Paulo`), na view e no app | O banco roda em UTC: sem isso, a partir das 21h um título que vence hoje aparecia como atrasado. Bug real, encontrado e corrigido. |
 | **Ações idempotentes** | "Marcar como pago" relê o saldo no servidor na hora do clique; um clique duplo não paga duas vezes. |
 | **Server Actions em vez de API routes** | Menos código e menos superfície: cada formulário chama direto a função do servidor. |
+| **Motor de risco como função pura, testada, com parâmetros no banco** | Regra de negócio fácil de testar e de ajustar sem mexer em código. O histórico é lido página por página: o Supabase limita 1000 linhas por consulta, e ler só a primeira daria nota errada sem avisar. |
 
 ## Modelo de dados
 
@@ -98,7 +112,7 @@ Além das tabelas, a view `titulos_com_saldo` entrega cada título já com saldo
 | 1 | Schema no Supabase + projeto Next.js rodando | ✅ |
 | 2a | Cadastro de cliente + primeira compra, lista de clientes, ficha | ✅ |
 | 2b | Pagamento parcial, marcar como pago, nova compra, "marcar tudo como pago" | ✅ |
-| 3 | **Motor de risco**: nota de 0 a 100 por cliente (atraso atual, perfil de cliente novo × antigo, mudança de padrão), com parâmetros configuráveis | 🚧 |
+| 3 | **Motor de risco**: nota de 0 a 100 por cliente (atraso atual, perfil de cliente novo × antigo, mudança de padrão), com parâmetros configuráveis | ✅ |
 | 4 | Tela "Hoje": o que precisa de atenção agora | ⏳ |
 | 5 | Previsão de caixa | ⏳ |
 | 6 | Régua de cobrança via WhatsApp | ⏳ |
@@ -118,6 +132,8 @@ Pré-requisitos: Node.js 20+ e um projeto no [Supabase](https://supabase.com) (o
    - `SUPABASE_SERVICE_ROLE_KEY` → chave **service_role** (não a "anon")
 4. `npm run dev` e abra <http://localhost:3000>
 
+Para rodar os testes do motor de risco: `npm test`.
+
 ## Estrutura do projeto
 
 ```
@@ -131,9 +147,13 @@ app/
       actions.js              Server Actions: pagamento parcial, marcar como pago
       nova-compra/            Nova compra para cliente existente
   componentes/BotaoAcao.js    Botão com confirmação e trava contra clique duplo
+  componentes/EtiquetaRisco.js  Etiqueta de risco (cor + texto)
 lib/
   supabase-server.js          Cliente Supabase (somente servidor)
   util.js                     Moeda, datas, centavos, "hoje" no fuso de Brasília
+  risco.js                    Motor de risco (função pura)
+  risco.test.js               Testes do motor de risco
+  carregar-risco.js           Busca os dados no Supabase e calcula o risco dos clientes
 supabase/
   schema.sql                  Schema completo (tabelas, view, RLS)
   correcao-fuso.sql           Correção de fuso para bancos já existentes

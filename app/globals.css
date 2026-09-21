@@ -134,6 +134,57 @@ button:disabled {
   cursor: wait;
 }
 
+.etiqueta-risco {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 999px;
+  border: 1px solid;
+  font-weight: 700;
+  font-size: 0.85em;
+}
+
+.risco-alto {
+  color: #b00020;
+  background: #fdecea;
+}
+
+.risco-medio {
+  color: #8a4b00;
+  background: #fff4e5;
+}
+
+.risco-baixo {
+  color: #1b5e20;
+  background: #e8f5e9;
+}
+
+.lista-clientes .linha-risco {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  font-size: 0.9em;
+  color: #444;
+}
+
+.caixa-risco {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 16px 0;
+}
+
+.caixa-risco ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.caixa-risco details {
+  font-size: 0.9em;
+  color: #444;
+}
+
 .marcar-tudo {
   display: flex;
   align-items: center;
