@@ -53,6 +53,9 @@ export default async function Home({ searchParams }) {
         <Link href="/clientes" className="botao botao-secundario">
           Ver clientes
         </Link>
+        <Link href="/previsao" className="botao botao-secundario">
+          Previsão de caixa
+        </Link>
       </div>
 
       <h2>Hoje, {formatarData(hoje)}</h2>

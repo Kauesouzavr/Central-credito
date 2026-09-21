@@ -4,7 +4,7 @@
 
 *English summary: a web app to manage store-credit ("pay later") sales — customers, receivables, partial payments, default-risk scoring and, on the roadmap, WhatsApp collection reminders and a cash-flow forecast. Built with Next.js (App Router + Server Actions) and Supabase (PostgreSQL).*
 
-**Status:** 🚧 em desenvolvimento — Fases 1 a 4 concluídas; próxima: Fase 5 (previsão de caixa).
+**Status:** 🚧 em desenvolvimento — Fases 1 a 5 concluídas; próxima: Fase 6 (régua de cobrança por WhatsApp).
 
 ---
 
@@ -25,6 +25,7 @@ Este é um projeto real, desenvolvido sob demanda para um cliente, e vai ser usa
 - **Risco de inadimplência**: cada cliente recebe uma nota de 0 a 100 e uma etiqueta (baixo / médio / alto) com o motivo em uma frase, na lista e na ficha.
 - **Tela "Hoje"** (a própria página inicial): total vencido, quantos clientes precisam de atenção, quantos atrasados nunca foram cobrados, o atraso mais antigo e o total a vencer em 30 dias; o cliente de maior risco em destaque, com o motivo; e a **fila de cobrança do dia**, do risco mais alto ao mais baixo.
 - **"Já cobrei"**: um clique (com confirmação) tira o cliente da fila por alguns dias (`dias_repetir_cobranca`); passado o prazo ele volta sozinho. Se clicou por engano, dá pra desfazer.
+- **Previsão de caixa** (`/previsao`): quanto deve entrar nas próximas 4 semanas. Compara a **soma dos vencimentos** com a **previsão ajustada pelo risco** de cada cliente, mostra a diferença e um gráfico de barras por período (já vencidos e semanas 1 a 4), com os valores escritos ao lado e uma versão em tabela.
 - Mensagens de sucesso/erro, confirmação antes de marcar como pago e proteção contra clique duplo.
 
 ## Como o risco é calculado
@@ -39,6 +40,10 @@ Nota = **atraso atual** (até 60) + **perfil do cliente** (até 20) + **mudança
 | Vários títulos abertos | +15 se o cliente tem mais de um título em aberto ao mesmo tempo (valor fixo, não é por título). |
 
 Alto a partir de 55 pontos, médio a partir de 25 (cortes em `configuracoes`). Com os valores iniciais e um título aberto, um cliente novo vira médio com 4 dias de atraso e alto com 12; um antigo que sempre pagou em dia, com 7 e 14. Com dois títulos abertos, o cliente novo já começa no médio (10 + 15 = 25), mesmo sem atraso. A fórmula é uma função pura em [`lib/risco.js`](lib/risco.js), coberta por testes (`npm test`), e os parâmetros ficam no banco para serem ajustados com dados reais (Fase 9).
+
+## Como a previsão de caixa é calculada
+
+Para cada cliente: **previsão = saldo em aberto × chance de pagar**, com chance = `max(0,15; 1 − nota de risco ÷ 130)`. Cliente sem risco tem 100% de chance; com a nota máxima (100), cerca de 23%. Os títulos são separados por período: **já vencidos** (ainda podem ser recebidos), **semana 1** (hoje a hoje+6), **semanas 2, 3 e 4**. O que vence depois de 4 semanas fica de fora da conta e aparece só como um aviso. A diferença entre a soma dos vencimentos e a previsão é o que a nota de risco indica que pode não entrar. A conta é uma função pura em [`lib/previsao.js`](lib/previsao.js), em centavos, com testes: cada valor previsto é arredondado uma vez só, então gráfico, tabela e totais fecham no centavo.
 
 ## Decisões técnicas (e por quê)
 
@@ -120,7 +125,7 @@ Além das tabelas, a view `titulos_com_saldo` entrega cada título já com saldo
 | 2b | Pagamento parcial, marcar como pago, nova compra, "marcar tudo como pago" | ✅ |
 | 3 | **Motor de risco**: nota de 0 a 100 por cliente (atraso atual, perfil de cliente novo × antigo, mudança de padrão), com parâmetros configuráveis | ✅ |
 | 4 | **Tela "Hoje"**: números do dia, cliente de maior risco em destaque e fila de cobrança (com "Já cobrei") | ✅ |
-| 5 | Previsão de caixa | ⏳ |
+| 5 | **Previsão de caixa**: soma dos vencimentos × previsão ajustada pelo risco, em 4 semanas, com gráfico | ✅ |
 | 6 | Régua de cobrança via WhatsApp | ⏳ |
 | 7 | Relatório semanal | ⏳ |
 | 8 | Redesign visual | ⏳ |
@@ -138,7 +143,7 @@ Pré-requisitos: Node.js 20+ e um projeto no [Supabase](https://supabase.com) (o
    - `SUPABASE_SERVICE_ROLE_KEY` → chave **service_role** (não a "anon")
 4. `npm run dev` e abra <http://localhost:3000>
 
-Testes automáticos (motor de risco, busca e tela "Hoje"): `npm test`.
+Testes automáticos (motor de risco, busca, tela "Hoje" e previsão de caixa): `npm test`.
 
 **Dados fictícios para testar:** `npm run seed:teste` cria 10 clientes de mentira, cada um numa situação diferente do motor de risco (cliente novo, antigo que já quitou tudo, atrasado, com pagamento parcial...). Eles são marcados com o segmento `TESTE` e telefones inválidos (`(00) 00000-00XX`), e `npm run seed:teste:remover` apaga só eles, sem tocar nos clientes reais. Os comandos leem o `.env.local`.
 
@@ -148,6 +153,7 @@ Testes automáticos (motor de risco, busca e tela "Hoje"): `npm test`.
 app/
   page.js                     Início = tela "Hoje" (busca, números do dia, fila de cobrança)
   actions.js                  Server Actions: "Já cobrei" e desfazer
+  previsao/page.js            Previsão de caixa (cartões, gráfico de barras e tabelas)
   clientes/
     page.js                   Lista de clientes
     novo/                     Cadastro (formulário + Server Action)
@@ -167,6 +173,9 @@ lib/
   hoje.js                     Tela "Hoje": contagens, fila e destaque (função pura)
   hoje.test.js                Testes da tela "Hoje"
   carregar-hoje.js            Busca os dados no Supabase e monta o resumo de hoje
+  previsao.js                 Previsão de caixa: períodos, chance de pagar, diferença (função pura)
+  previsao.test.js            Testes da previsão de caixa
+  carregar-previsao.js        Busca os dados no Supabase e monta a previsão
 scripts/
   seed-teste.mjs              Cria/remove os clientes fictícios de teste
 supabase/
