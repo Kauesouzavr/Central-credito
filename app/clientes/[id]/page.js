@@ -79,7 +79,8 @@ export default async function FichaCliente({ params, searchParams }) {
             <p>
               Atraso atual: {risco.partes.atraso} de {risco.maximos.atraso} · Perfil do cliente:{' '}
               {risco.partes.perfil} de {risco.maximos.perfil} · Mudança de padrão:{' '}
-              {risco.partes.mudanca} de {risco.maximos.mudanca}
+              {risco.partes.mudanca} de {risco.maximos.mudanca} · Vários títulos abertos:{' '}
+              {risco.partes.varios} de {risco.maximos.varios}
             </p>
           </details>
         </section>

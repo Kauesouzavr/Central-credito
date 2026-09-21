@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --no-warnings --test lib/risco.test.js lib/util.test.js",
+    "test": "node --no-warnings --test lib/risco.test.js lib/util.test.js lib/hoje.test.js",
     "seed:teste": "node --no-warnings --env-file=.env.local scripts/seed-teste.mjs",
     "seed:teste:remover": "node --no-warnings --env-file=.env.local scripts/seed-teste.mjs --remover"
   },

@@ -73,10 +73,56 @@ button {
 
 .menu-inicial {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 12px;
-  max-width: 320px;
-  margin-top: 24px;
+  margin-top: 16px;
+}
+
+.cartoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.cartao {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.cartao-numero {
+  margin: 0;
+  font-size: 1.6em;
+  font-weight: 700;
+}
+
+.cartao-rotulo {
+  margin: 0;
+  font-size: 0.9em;
+  color: #444;
+}
+
+.fila li {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.fila li a {
+  flex: 1 1 260px;
+}
+
+.fila li form {
+  display: flex;
+  align-items: center;
+}
+
+.cobrados summary {
+  cursor: pointer;
+  margin: 16px 0 8px;
+  font-weight: 600;
 }
 
 .lista-clientes {
