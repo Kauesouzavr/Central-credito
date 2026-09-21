@@ -289,3 +289,75 @@ button:disabled {
 .acoes-titulo details[open] summary {
   margin-bottom: 12px;
 }
+
+.legenda {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.9em;
+  color: #52514e;
+}
+
+.chave::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border-radius: 2px;
+  vertical-align: -1px;
+}
+
+.chave-previsto::before {
+  background: #2a78d6;
+}
+
+.chave-diferenca::before {
+  background: #b0aea4;
+}
+
+.grafico {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.barra-rotulo {
+  margin: 0 0 4px;
+}
+
+.barra-rotulo span {
+  font-size: 0.9em;
+  color: #52514e;
+}
+
+.barra-trilho {
+  display: flex;
+  gap: 2px;
+  height: 20px;
+}
+
+.barra-previsto,
+.barra-diferenca {
+  min-width: 2px;
+}
+
+.barra-previsto {
+  background: #2a78d6;
+}
+
+.barra-diferenca {
+  background: #b0aea4;
+}
+
+.barra-previsto:last-child,
+.barra-diferenca {
+  border-radius: 0 4px 4px 0;
+}
+
+.barra-valores {
+  margin: 4px 0 0;
+}
