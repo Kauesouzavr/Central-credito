@@ -134,6 +134,29 @@ button:disabled {
   cursor: wait;
 }
 
+.busca {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.busca label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+  flex: 1 1 260px;
+}
+
+.busca input {
+  font-size: 1em;
+  padding: 10px 12px;
+  border: 1px solid #999;
+  border-radius: 6px;
+}
+
 .etiqueta-risco {
   display: inline-block;
   padding: 2px 12px;
