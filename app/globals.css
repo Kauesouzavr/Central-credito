@@ -1,0 +1,171 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 18px;
+  line-height: 1.5;
+  color: #1a1a1a;
+  background: #fff;
+  margin: 0;
+}
+
+.pagina {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+h1 {
+  font-size: 1.8em;
+}
+
+.cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 480px;
+}
+
+.formulario label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.formulario input,
+.formulario select {
+  font-size: 1em;
+  padding: 10px 12px;
+  border: 1px solid #999;
+  border-radius: 6px;
+}
+
+.botao,
+button {
+  display: inline-block;
+  font-size: 1em;
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: none;
+  background: #1a1a1a;
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+}
+
+.botao-secundario {
+  background: #fff;
+  color: #1a1a1a;
+  border: 1px solid #1a1a1a;
+}
+
+.menu-inicial {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 320px;
+  margin-top: 24px;
+}
+
+.lista-clientes {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lista-clientes li a {
+  display: block;
+  padding: 14px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.lista-clientes li a:hover {
+  background: #f5f5f5;
+}
+
+.tabela-titulos {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.tabela-titulos th,
+.tabela-titulos td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+.erro {
+  color: #b00020;
+  font-weight: 600;
+  background: #fdecea;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.sucesso {
+  color: #1b5e20;
+  font-weight: 600;
+  background: #e8f5e9;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.marcar-tudo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.marcar-tudo p {
+  margin: 0;
+}
+
+.linha-acoes td {
+  background: #fafafa;
+}
+
+.acoes-titulo {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.acoes-titulo summary {
+  cursor: pointer;
+  padding: 12px 20px;
+  border: 1px solid #1a1a1a;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.acoes-titulo details[open] summary {
+  margin-bottom: 12px;
+}
