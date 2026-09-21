@@ -4,7 +4,7 @@
 
 *English summary: a web app to manage store-credit ("pay later") sales — customers, receivables, partial payments, default-risk scoring and, on the roadmap, WhatsApp collection reminders and a cash-flow forecast. Built with Next.js (App Router + Server Actions) and Supabase (PostgreSQL).*
 
-**Status:** 🚧 em desenvolvimento — Fases 1 a 3 concluídas; próxima: Fase 4 (tela "Hoje").
+**Status:** 🚧 em desenvolvimento — Fases 1 a 4 concluídas; próxima: Fase 5 (previsão de caixa).
 
 ---
 
@@ -23,19 +23,22 @@ Este é um projeto real, desenvolvido sob demanda para um cliente, e vai ser usa
 - **Nova compra** para cliente já cadastrado: quem quitou tudo continua salvo, com o histórico, sem precisar de novo cadastro.
 - **Busca de cliente pelo nome**, na página inicial e na lista: ignora acento e maiúscula ("jose" acha "José"), acha pedaço do nome e não liga pra ordem das palavras. Se ninguém for encontrado, oferece cadastrar como cliente novo. Cliente que já quitou tudo continua na base: é só buscar e usar "+ Nova compra".
 - **Risco de inadimplência**: cada cliente recebe uma nota de 0 a 100 e uma etiqueta (baixo / médio / alto) com o motivo em uma frase, na lista e na ficha.
+- **Tela "Hoje"** (a própria página inicial): total vencido, quantos clientes precisam de atenção, quantos atrasados nunca foram cobrados, o atraso mais antigo e o total a vencer em 30 dias; o cliente de maior risco em destaque, com o motivo; e a **fila de cobrança do dia**, do risco mais alto ao mais baixo.
+- **"Já cobrei"**: um clique (com confirmação) tira o cliente da fila por alguns dias (`dias_repetir_cobranca`); passado o prazo ele volta sozinho. Se clicou por engano, dá pra desfazer.
 - Mensagens de sucesso/erro, confirmação antes de marcar como pago e proteção contra clique duplo.
 
 ## Como o risco é calculado
 
-Nota = **atraso atual** (até 60) + **perfil do cliente** (até 20) + **mudança de padrão** (peso configurável, 20 por padrão).
+Nota = **atraso atual** (até 60) + **perfil do cliente** (até 20) + **mudança de padrão** (peso configurável, 20 por padrão) + **vários títulos abertos** (15).
 
 | Parte | Regra |
 |---|---|
 | Atraso atual | Título em aberto mais atrasado: cada dia vale `60 ÷ limite_atraso` pontos, até 60. |
 | Perfil | Cliente **novo** (nada quitado ainda): 10 pontos. Cliente **antigo**: até 20, conforme a proporção dos títulos quitados que foram pagos com atraso (sempre em dia = 0). |
 | Mudança de padrão | Soma o peso se o cliente já quitou 3+ títulos, todos em dia, e agora atrasou. |
+| Vários títulos abertos | +15 se o cliente tem mais de um título em aberto ao mesmo tempo (valor fixo, não é por título). |
 
-Alto a partir de 55 pontos, médio a partir de 25 (cortes em `configuracoes`). Com os valores iniciais, um cliente novo vira médio com 4 dias de atraso e alto com 12; um antigo que sempre pagou em dia, com 7 e 14. A fórmula é uma função pura em [`lib/risco.js`](lib/risco.js), coberta por testes (`npm test`), e os parâmetros ficam no banco para serem ajustados com dados reais (Fase 9).
+Alto a partir de 55 pontos, médio a partir de 25 (cortes em `configuracoes`). Com os valores iniciais e um título aberto, um cliente novo vira médio com 4 dias de atraso e alto com 12; um antigo que sempre pagou em dia, com 7 e 14. Com dois títulos abertos, o cliente novo já começa no médio (10 + 15 = 25), mesmo sem atraso. A fórmula é uma função pura em [`lib/risco.js`](lib/risco.js), coberta por testes (`npm test`), e os parâmetros ficam no banco para serem ajustados com dados reais (Fase 9).
 
 ## Decisões técnicas (e por quê)
 
@@ -50,6 +53,8 @@ Alto a partir de 55 pontos, médio a partir de 25 (cortes em `configuracoes`). C
 | **Ações idempotentes** | "Marcar como pago" relê o saldo no servidor na hora do clique; um clique duplo não paga duas vezes. |
 | **Server Actions em vez de API routes** | Menos código e menos superfície: cada formulário chama direto a função do servidor. |
 | **Motor de risco como função pura, testada, com parâmetros no banco** | Regra de negócio fácil de testar e de ajustar sem mexer em código. O histórico é lido página por página: o Supabase limita 1000 linhas por consulta, e ler só a primeira daria nota errada sem avisar. |
+| **Tela "Hoje" também como função pura** (`lib/hoje.js`), separada da leitura do banco | Contagens, ordem da fila e prazos são testados sem precisar de banco nem de navegador. |
+| **"Já cobrei" grava na tabela `mensagens`** (a mesma que a régua de WhatsApp vai usar) | A fila e o contador de "nunca cobrados" já funcionam agora, e a Fase 6 entra sem migração: as mensagens automáticas passam a contar como cobrança do mesmo jeito. |
 
 ## Modelo de dados
 
@@ -114,7 +119,7 @@ Além das tabelas, a view `titulos_com_saldo` entrega cada título já com saldo
 | 2a | Cadastro de cliente + primeira compra, lista de clientes, ficha | ✅ |
 | 2b | Pagamento parcial, marcar como pago, nova compra, "marcar tudo como pago" | ✅ |
 | 3 | **Motor de risco**: nota de 0 a 100 por cliente (atraso atual, perfil de cliente novo × antigo, mudança de padrão), com parâmetros configuráveis | ✅ |
-| 4 | Tela "Hoje": o que precisa de atenção agora | ⏳ |
+| 4 | **Tela "Hoje"**: números do dia, cliente de maior risco em destaque e fila de cobrança (com "Já cobrei") | ✅ |
 | 5 | Previsão de caixa | ⏳ |
 | 6 | Régua de cobrança via WhatsApp | ⏳ |
 | 7 | Relatório semanal | ⏳ |
@@ -133,7 +138,7 @@ Pré-requisitos: Node.js 20+ e um projeto no [Supabase](https://supabase.com) (o
    - `SUPABASE_SERVICE_ROLE_KEY` → chave **service_role** (não a "anon")
 4. `npm run dev` e abra <http://localhost:3000>
 
-Testes automáticos (motor de risco e busca): `npm test`.
+Testes automáticos (motor de risco, busca e tela "Hoje"): `npm test`.
 
 **Dados fictícios para testar:** `npm run seed:teste` cria 10 clientes de mentira, cada um numa situação diferente do motor de risco (cliente novo, antigo que já quitou tudo, atrasado, com pagamento parcial...). Eles são marcados com o segmento `TESTE` e telefones inválidos (`(00) 00000-00XX`), e `npm run seed:teste:remover` apaga só eles, sem tocar nos clientes reais. Os comandos leem o `.env.local`.
 
@@ -141,7 +146,8 @@ Testes automáticos (motor de risco e busca): `npm test`.
 
 ```
 app/
-  page.js                     Início
+  page.js                     Início = tela "Hoje" (busca, números do dia, fila de cobrança)
+  actions.js                  Server Actions: "Já cobrei" e desfazer
   clientes/
     page.js                   Lista de clientes
     novo/                     Cadastro (formulário + Server Action)
@@ -156,8 +162,11 @@ lib/
   util.js                     Moeda, datas, centavos, "hoje" no fuso de Brasília
   risco.js                    Motor de risco (função pura)
   risco.test.js               Testes do motor de risco
-  util.test.js                Testes da busca por nome
+  util.test.js                Testes da busca por nome e das funções de data
   carregar-risco.js           Busca os dados no Supabase e calcula o risco dos clientes
+  hoje.js                     Tela "Hoje": contagens, fila e destaque (função pura)
+  hoje.test.js                Testes da tela "Hoje"
+  carregar-hoje.js            Busca os dados no Supabase e monta o resumo de hoje
 scripts/
   seed-teste.mjs              Cria/remove os clientes fictícios de teste
 supabase/
