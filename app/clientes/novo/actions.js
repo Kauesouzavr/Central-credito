@@ -2,7 +2,8 @@
 
 import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '../../../lib/supabase-server';
-import { FORMAS_PAGAMENTO, hojeBrasil } from '../../../lib/util';
+import { FORMAS_PAGAMENTO, formatarTelefoneE164, hojeBrasil } from '../../../lib/util';
+import { montarMensagemWhatsApp } from '../../../lib/mensagens-whatsapp';
 
 export async function criarCliente(formData) {
   const nome = (formData.get('nome') || '').toString().trim();
@@ -52,14 +53,18 @@ export async function criarCliente(formData) {
     return;
   }
 
-  const { error: erroTitulo } = await supabase.from('titulos').insert({
-    cliente_id: cliente.id,
-    produto,
-    valor,
-    data_venda: hojeBrasil(),
-    data_vencimento: dataVencimento,
-    forma_pagamento: formaPagamento,
-  });
+  const { data: titulo, error: erroTitulo } = await supabase
+    .from('titulos')
+    .insert({
+      cliente_id: cliente.id,
+      produto,
+      valor,
+      data_venda: hojeBrasil(),
+      data_vencimento: dataVencimento,
+      forma_pagamento: formaPagamento,
+    })
+    .select('id, produto, valor, data_vencimento')
+    .single();
 
   if (erroTitulo) {
     redirect(
@@ -68,6 +73,21 @@ export async function criarCliente(formData) {
       )}`
     );
     return;
+  }
+
+  // Mensagem de boas-vindas por WhatsApp (Fase 6): só grava 'pendente' aqui —
+  // quem manda de verdade é o bot (scripts/whatsapp-bot.mjs), no próximo
+  // ciclo dele. Não bloqueia o cadastro se der erro (ou se o telefone não
+  // parecer válido pra WhatsApp): cliente e compra já estão salvos, o aviso
+  // é só um extra.
+  if (formatarTelefoneE164(telefone)) {
+    const { texto } = montarMensagemWhatsApp({ tipo: 'cadastro', cliente: { nome }, titulo });
+    const { error: erroMensagem } = await supabase
+      .from('mensagens')
+      .insert({ cliente_id: cliente.id, titulo_id: titulo.id, tipo: 'cadastro', texto, status: 'pendente' });
+    if (erroMensagem) {
+      console.error('Erro ao enfileirar mensagem de cadastro:', erroMensagem.message);
+    }
   }
 
   redirect('/clientes');
