@@ -30,7 +30,12 @@ export default async function Home({ searchParams }) {
 
   return (
     <main className="pagina">
-      <h1>Central de Crédito</h1>
+      <div className="cabecalho">
+        <h1>Hoje, {formatarData(hoje)}</h1>
+        <Link href="/clientes/novo" className="botao">
+          + Novo cliente
+        </Link>
+      </div>
 
       <form action="/clientes" method="get" className="busca">
         <label>
@@ -45,23 +50,6 @@ export default async function Home({ searchParams }) {
         </label>
         <button type="submit">Buscar</button>
       </form>
-
-      <div className="menu-inicial">
-        <Link href="/clientes/novo" className="botao">
-          + Cadastrar cliente
-        </Link>
-        <Link href="/clientes" className="botao botao-secundario">
-          Ver clientes
-        </Link>
-        <Link href="/previsao" className="botao botao-secundario">
-          Previsão de caixa
-        </Link>
-        <Link href="/relatorio" className="botao botao-secundario">
-          Relatório semanal
-        </Link>
-      </div>
-
-      <h2>Hoje, {formatarData(hoje)}</h2>
 
       {ok && <p className="sucesso">{ok}</p>}
       {erro && <p className="erro">{erro}</p>}

@@ -1,93 +1,102 @@
-/* Central de Crédito — Fase 8 (redesign visual)
-   Mundo: talão de recibo com papel-carbono. Ver o comentário de decisão
-   no <body> (app/layout.js) pro contrato completo. Cor reservada só pro
-   acento de marca e pro sinal de status/risco — nunca decorativa. */
+/* Central de Crédito — Fase 8 (redesign visual, revisão 2)
+   Painel de gestão limpo e profissional: fundo neutro claro, cartões
+   brancos com borda sutil, um único acento (vinho), selos de status em
+   pílula sólida. Cor reservada só pro acento de marca e pro sinal de
+   status/risco — nunca decorativa. Ver o comentário de decisão no <body>
+   (app/layout.js) pro histórico completo (revisão da direção anterior). */
 
 * {
   box-sizing: border-box;
 }
 
 :root {
-  /* papel */
-  --papel: #f7f1e4;
-  --papel-cartao: #fffdf6;
-  --linha: #ddd0b2;
-  --linha-forte: #c9b98e;
+  /* fundo e superfícies */
+  --fundo: #f6f5f3;
+  --superficie: #ffffff;
+  --linha: #e4e1db;
+  --linha-forte: #cfcabf;
 
-  /* tinta */
-  --tinta: #2b2620;
-  --tinta-suave: #6b6255;
+  /* texto */
+  --texto: #201d1a;
+  --texto-suave: #6b675f;
+  --texto-fraco: #918c81;
 
-  /* acento único: roxo-carbono, tinta de papel-carbono */
-  --carbono: #4b3b6b;
-  --carbono-escuro: #382c50;
-  --carbono-fundo: #ece7f5;
+  /* acento único: vinho */
+  --acento: #7a1f2b;
+  --acento-escuro: #5e1621;
+  --acento-fundo: #f7e9ea;
 
-  /* selos de status (mesma família do sistema de risco: vermelho/âmbar/verde) */
-  --selo-vermelho-tinta: #8a2e22;
-  --selo-vermelho-fundo: #fbe9e2;
-  --selo-ambar-tinta: #8a5a12;
-  --selo-ambar-fundo: #fbf0da;
-  --selo-verde-tinta: #2e6b3e;
-  --selo-verde-fundo: #e6f2e3;
+  /* selos de status */
+  --selo-vermelho-tinta: #a3271f;
+  --selo-vermelho-fundo: #fbeae8;
+  --selo-ambar-tinta: #92600a;
+  --selo-ambar-fundo: #faf0dc;
+  --selo-verde-tinta: #276b3e;
+  --selo-verde-fundo: #e7f3ea;
 
-  --raio: 6px;
-  --sombra-cartao: 0 1px 0 var(--linha-forte), 0 2px 6px rgba(43, 38, 32, 0.08);
+  --raio: 10px;
+  --raio-pequeno: 6px;
+  --sombra: 0 1px 2px rgba(32, 29, 26, 0.06), 0 1px 12px rgba(32, 29, 26, 0.04);
 }
 
 html {
-  background: var(--papel);
+  background: var(--fundo);
 }
 
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 18px;
+  font-family: -apple-system, "Segoe UI", system-ui, Roboto, sans-serif;
+  font-size: 16px;
   line-height: 1.55;
-  color: var(--tinta);
-  background: var(--papel);
+  color: var(--texto);
+  background: var(--fundo);
   margin: 0;
+  -webkit-font-smoothing: antialiased;
 }
 
 .pagina {
-  max-width: 720px;
+  max-width: 1080px;
   margin: 0 auto;
-  padding: 32px 20px 64px;
+  padding: 32px 24px 64px;
 }
 
 h1,
 h2,
 h3 {
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.01em;
+  color: var(--texto);
 }
 
 h1 {
-  font-size: 1.8em;
-  margin: 0 0 4px;
+  font-size: 1.6em;
+  margin: 0;
 }
 
 h2 {
-  font-size: 1.3em;
-  margin: 28px 0 12px;
+  font-size: 1.15em;
+  margin: 32px 0 14px;
 }
 
 h3 {
-  font-size: 1.05em;
-  margin: 20px 0 8px;
+  font-size: 1em;
+  margin: 0;
+}
+
+p {
+  margin: 0 0 8px;
 }
 
 a {
-  color: var(--carbono);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 2px;
+  color: var(--acento);
+  text-decoration: none;
 }
 
 a:hover {
-  color: var(--carbono-escuro);
+  text-decoration: underline;
 }
 
 :focus-visible {
-  outline: 3px solid var(--carbono);
+  outline: 2px solid var(--acento);
   outline-offset: 2px;
 }
 
@@ -97,6 +106,71 @@ a:hover {
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+/* ---------- Navegação fixa ---------- */
+
+.nav {
+  background: var(--superficie);
+  border-bottom: 1px solid var(--linha);
+}
+
+.nav-conteudo {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.nav-marca {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.2em;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.nav-marca:hover {
+  text-decoration: none;
+  color: var(--acento);
+}
+
+.nav-marca::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--acento);
+  vertical-align: middle;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.nav-link {
+  font-size: 0.95em;
+  font-weight: 500;
+  color: var(--texto-suave);
+}
+
+.nav-link:hover {
+  color: var(--texto);
+  text-decoration: none;
+}
+
+.nav-link-ativo {
+  color: var(--texto);
+  font-weight: 700;
 }
 
 /* ---------- Formulários ---------- */
@@ -112,79 +186,69 @@ a:hover {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-weight: 700;
+  font-weight: 600;
+  font-size: 0.92em;
+  color: var(--texto-suave);
 }
 
 .formulario input,
 .formulario select {
-  font-size: 1em;
+  font-size: 1rem;
   font-family: inherit;
-  padding: 12px 14px;
-  border: 2px solid var(--linha-forte);
-  border-radius: var(--raio);
-  background: var(--papel-cartao);
-  color: var(--tinta);
+  color: var(--texto);
+  padding: 11px 13px;
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--raio-pequeno);
+  background: var(--superficie);
 }
 
 .formulario input:focus,
 .formulario select:focus {
-  border-color: var(--carbono);
+  border-color: var(--acento);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--acento-fundo);
 }
 
-/* ---------- Botões ----------
-   Grandes e óbvios de propósito: o dono da loja precisa reconhecer um botão
-   sem pensar. O ":active" "carimba" — a sombra recolhe, como um carimbo de
-   borracha batendo no papel. */
+/* ---------- Botões ---------- */
 
 .botao,
 button {
   display: inline-block;
   font-family: inherit;
-  font-size: 1em;
-  font-weight: 700;
-  padding: 13px 22px;
-  border-radius: var(--raio);
-  border: none;
-  background: var(--carbono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 11px 20px;
+  border-radius: var(--raio-pequeno);
+  border: 1px solid var(--acento);
+  background: var(--acento);
   color: #fff;
   cursor: pointer;
   text-decoration: none;
   text-align: center;
-  box-shadow: 0 3px 0 var(--carbono-escuro);
-  transition: transform 0.06s ease, box-shadow 0.06s ease;
+  transition: background 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
 }
 
 .botao:hover,
 button:hover {
-  background: var(--carbono-escuro);
-}
-
-.botao:active,
-button:active {
-  transform: translateY(3px);
-  box-shadow: 0 0 0 var(--carbono-escuro);
+  background: var(--acento-escuro);
+  border-color: var(--acento-escuro);
+  text-decoration: none;
 }
 
 .botao-secundario {
-  background: var(--papel-cartao);
-  color: var(--carbono);
-  border: 2px solid var(--carbono);
-  box-shadow: 0 3px 0 var(--linha-forte);
+  background: var(--superficie);
+  color: var(--texto);
+  border: 1px solid var(--linha-forte);
 }
 
 .botao-secundario:hover {
-  background: var(--carbono-fundo);
-}
-
-.botao-secundario:active {
-  box-shadow: 0 0 0 var(--linha-forte);
+  background: var(--fundo);
+  border-color: var(--linha-forte);
 }
 
 button:disabled {
   opacity: 0.55;
   cursor: wait;
-  box-shadow: none;
-  transform: none;
 }
 
 .menu-inicial {
@@ -194,41 +258,40 @@ button:disabled {
   margin-top: 16px;
 }
 
-/* ---------- Cartões (canhoto de recibo) ---------- */
+/* ---------- Cartões ---------- */
 
 .cartoes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-  margin: 16px 0;
+  gap: 14px;
+  margin: 20px 0;
 }
 
 .cartao {
-  background: var(--papel-cartao);
+  background: var(--superficie);
   border: 1px solid var(--linha);
-  border-left: 4px solid var(--carbono);
   border-radius: var(--raio);
-  padding: 14px 16px;
-  box-shadow: var(--sombra-cartao);
+  padding: 16px 18px;
+  box-shadow: var(--sombra);
 }
 
 .cartao-numero {
   margin: 0;
-  font-size: 1.6em;
-  font-weight: 800;
+  font-size: 1.5em;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .cartao-rotulo {
   margin: 4px 0 0;
-  font-size: 0.9em;
-  color: var(--tinta-suave);
+  font-size: 0.85em;
+  color: var(--texto-suave);
 }
 
 .cartao-variacao {
   margin: 6px 0 0;
-  font-size: 0.85em;
-  color: var(--tinta-suave);
+  font-size: 0.8em;
+  color: var(--texto-fraco);
 }
 
 /* ---------- Fila de cobrança ---------- */
@@ -252,8 +315,8 @@ button:disabled {
 .cobrados summary {
   cursor: pointer;
   margin: 16px 0 8px;
-  font-weight: 700;
-  color: var(--carbono);
+  font-weight: 600;
+  color: var(--acento);
 }
 
 .lista-clientes {
@@ -269,14 +332,17 @@ button:disabled {
   padding: 14px 16px;
   border: 1px solid var(--linha);
   border-radius: var(--raio);
-  background: var(--papel-cartao);
-  color: inherit;
-  text-decoration: none;
+  background: var(--superficie);
+  color: var(--texto);
 }
 
 .lista-clientes li a:hover {
-  border-color: var(--carbono);
-  background: var(--carbono-fundo);
+  border-color: var(--acento);
+  text-decoration: none;
+}
+
+.lista-clientes li a strong {
+  color: var(--texto);
 }
 
 .lista-clientes .linha-risco {
@@ -285,8 +351,8 @@ button:disabled {
   gap: 10px;
   flex-wrap: wrap;
   margin-top: 6px;
-  font-size: 0.9em;
-  color: var(--tinta-suave);
+  font-size: 0.88em;
+  color: var(--texto-suave);
 }
 
 /* ---------- Tabelas ---------- */
@@ -295,43 +361,53 @@ button:disabled {
   width: 100%;
   border-collapse: collapse;
   margin-top: 12px;
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  overflow: hidden;
 }
 
 .tabela-titulos th {
   text-align: left;
-  padding: 10px 8px;
-  border-bottom: 2px solid var(--linha-forte);
-  font-size: 0.85em;
+  padding: 12px 14px;
+  background: var(--fundo);
+  border-bottom: 1px solid var(--linha);
+  font-size: 0.78em;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--tinta-suave);
+  letter-spacing: 0.04em;
+  color: var(--texto-suave);
 }
 
 .tabela-titulos td {
   text-align: left;
-  padding: 10px 8px;
-  border-bottom: 1px dashed var(--linha);
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--linha);
   font-variant-numeric: tabular-nums;
+}
+
+.tabela-titulos tbody tr:last-child td {
+  border-bottom: none;
 }
 
 /* ---------- Mensagens ---------- */
 
 .erro {
   color: var(--selo-vermelho-tinta);
-  font-weight: 700;
+  font-weight: 600;
   background: var(--selo-vermelho-fundo);
   padding: 12px 14px;
-  border-radius: var(--raio);
-  border-left: 4px solid var(--selo-vermelho-tinta);
+  border-radius: var(--raio-pequeno);
+  border: 1px solid var(--selo-vermelho-tinta);
 }
 
 .sucesso {
   color: var(--selo-verde-tinta);
-  font-weight: 700;
+  font-weight: 600;
   background: var(--selo-verde-fundo);
   padding: 12px 14px;
-  border-radius: var(--raio);
-  border-left: 4px solid var(--selo-verde-tinta);
+  border-radius: var(--raio-pequeno);
+  border: 1px solid var(--selo-verde-tinta);
 }
 
 /* ---------- Busca ---------- */
@@ -341,84 +417,77 @@ button:disabled {
   align-items: flex-end;
   gap: 12px;
   flex-wrap: wrap;
-  margin: 16px 0;
+  margin: 20px 0;
 }
 
 .busca label {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-weight: 700;
+  font-weight: 600;
+  font-size: 0.92em;
+  color: var(--texto-suave);
   flex: 1 1 260px;
 }
 
 .busca input {
-  font-size: 1em;
+  font-size: 1rem;
   font-family: inherit;
-  padding: 12px 14px;
-  border: 2px solid var(--linha-forte);
-  border-radius: var(--raio);
-  background: var(--papel-cartao);
-  color: var(--tinta);
+  padding: 11px 13px;
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--raio-pequeno);
+  background: var(--superficie);
+  color: var(--texto);
 }
 
 .busca input:focus {
-  border-color: var(--carbono);
+  border-color: var(--acento);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--acento-fundo);
 }
 
-/* ---------- Selos: risco do cliente e status do título ----------
-   O carimbo é o motivo central do redesign: rótulo girado, borda um pouco
-   irregular (o "raio" desigual imita o carimbo de borracha batendo torto),
-   letras maiúsculas. Cor só aparece aqui e no acento de marca. */
+/* ---------- Selos: risco do cliente e status do título ---------- */
 
 .etiqueta-risco,
 .selo {
-  display: inline-block;
-  padding: 3px 12px;
-  border-radius: 3px 8px 3px 8px;
-  border: 2px solid;
-  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 11px;
+  border-radius: 999px;
+  font-weight: 600;
   font-size: 0.78em;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  transform: rotate(-2deg);
 }
 
 .risco-alto,
 .selo-atrasado {
   color: var(--selo-vermelho-tinta);
   background: var(--selo-vermelho-fundo);
-  border-color: var(--selo-vermelho-tinta);
 }
 
 .risco-medio {
   color: var(--selo-ambar-tinta);
   background: var(--selo-ambar-fundo);
-  border-color: var(--selo-ambar-tinta);
 }
 
 .risco-baixo,
 .selo-pago {
   color: var(--selo-verde-tinta);
   background: var(--selo-verde-fundo);
-  border-color: var(--selo-verde-tinta);
 }
 
 .selo-em_aberto {
-  color: var(--tinta-suave);
-  background: var(--papel);
-  border-color: var(--linha-forte);
+  color: var(--texto-suave);
+  background: var(--fundo);
 }
 
 /* ---------- Caixa de risco em destaque ---------- */
 
 .caixa-risco {
-  background: var(--papel-cartao);
-  border: 1px solid var(--linha);
-  border-left: 4px solid var(--carbono);
+  background: var(--acento-fundo);
+  border: 1px solid var(--acento);
   border-radius: var(--raio);
-  padding: 14px 16px;
-  margin: 16px 0;
+  padding: 16px 18px;
+  margin: 20px 0;
 }
 
 .caixa-risco ul {
@@ -428,7 +497,7 @@ button:disabled {
 
 .caixa-risco details {
   font-size: 0.9em;
-  color: var(--tinta-suave);
+  color: var(--texto-suave);
 }
 
 /* ---------- Ações de título ---------- */
@@ -439,9 +508,10 @@ button:disabled {
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  margin-top: 8px;
-  padding: 12px 16px;
-  background: var(--carbono-fundo);
+  margin-top: 12px;
+  padding: 14px 18px;
+  background: var(--superficie);
+  border: 1px solid var(--linha);
   border-radius: var(--raio);
 }
 
@@ -450,8 +520,7 @@ button:disabled {
 }
 
 .linha-acoes td {
-  background: var(--papel);
-  border-bottom: 1px dashed var(--linha);
+  background: var(--fundo);
 }
 
 .acoes-titulo {
@@ -463,12 +532,13 @@ button:disabled {
 
 .acoes-titulo summary {
   cursor: pointer;
-  padding: 12px 20px;
-  border: 2px solid var(--carbono);
-  border-radius: var(--raio);
-  background: var(--papel-cartao);
-  color: var(--carbono);
-  font-weight: 700;
+  padding: 11px 18px;
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--raio-pequeno);
+  background: var(--superficie);
+  color: var(--texto);
+  font-weight: 600;
+  font-size: 0.92em;
 }
 
 .acoes-titulo details[open] summary {
@@ -481,22 +551,22 @@ button:disabled {
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
-  font-size: 0.9em;
-  color: var(--tinta-suave);
+  font-size: 0.88em;
+  color: var(--texto-suave);
 }
 
 .chave::before {
   content: '';
   display: inline-block;
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   margin-right: 6px;
-  border-radius: 2px;
+  border-radius: 3px;
   vertical-align: -1px;
 }
 
 .chave-previsto::before {
-  background: var(--carbono);
+  background: var(--acento);
 }
 
 .chave-diferenca::before {
@@ -506,7 +576,7 @@ button:disabled {
 .grafico {
   list-style: none;
   padding: 0;
-  margin: 16px 0;
+  margin: 20px 0;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -517,16 +587,16 @@ button:disabled {
 }
 
 .barra-rotulo span {
-  font-size: 0.9em;
-  color: var(--tinta-suave);
+  font-size: 0.88em;
+  color: var(--texto-suave);
 }
 
 .barra-trilho {
   display: flex;
   gap: 2px;
-  height: 20px;
-  background: var(--papel);
-  border-radius: 3px;
+  height: 18px;
+  background: var(--fundo);
+  border-radius: 4px;
   overflow: hidden;
 }
 
@@ -536,7 +606,7 @@ button:disabled {
 }
 
 .barra-previsto {
-  background: var(--carbono);
+  background: var(--acento);
 }
 
 .barra-diferenca {

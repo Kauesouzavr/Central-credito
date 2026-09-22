@@ -1,4 +1,5 @@
 import './globals.css';
+import Nav from './componentes/Nav';
 
 export const metadata = {
   title: 'Central de Crédito',
@@ -13,25 +14,25 @@ export default function RootLayout({ children }) {
           style={{ display: 'none' }}
           dangerouslySetInnerHTML={{
             __html: `<!--
-THESIS: app de fiado pra dona de loja idosa deve parecer o talão de
-recibo de papel-carbono que ela já confia, não um SaaS genérico.
-OWN-WORLD: papel creme, roxo-carbono como único acento, selos de
-status tipo carimbo (girados, borda irregular), divisor pontilhado
-tipo perfuração de talão, números de dinheiro tabulares.
-STORY: ela abre o app e lê os números do dia como quem lê um
-canhoto de recibo; aperta botões grandes e óbvios, como carimbar
-"PAGO"; confia em cada número porque parece um registro de papel.
-FIRST VIEWPORT: Início "Hoje" — busca, botões grandes de menu,
-cartões-canhoto com friso roxo-carbono, fila de cobrança embaixo.
-FORM: Talão de recibo com papel-carbono (direção #3, seed
-35350451), com um traço emprestado do HyperCard: botão "carimba"
-ao ser pressionado (sombra recolhe no :active).
-FINISH: unreviewed and undocumented is unfinished; this build
-ends with the finish review, the verdict, DESIGN.md, and every
-shipping raster carrying its provenance.
+REVISÃO: a direção "talão de recibo com papel-carbono" (selos girados,
+papel creme, perfuração pontilhada) foi rejeitada pelo usuário na prática
+("ficou ridículo") — pedido explícito de algo limpo, alinhado e
+profissional, tipo painel de gestão. Esta é a segunda direção, pinada
+pelo usuário (referências visuais fornecidas), não sorteada.
+THESIS: um painel de gestão sério e confiável, com menu fixo, cartões
+brancos discretos e um único acento (vinho) — sem nenhum motivo
+decorativo que não sirva a hierarquia da informação.
+OWN-WORLD: fundo neutro claro, cartões brancos com borda sutil, acento
+vinho único, selos de status em pílula sólida (não girados), logo em
+serifa só na marca do menu — todo o resto em sans-serif do sistema.
+FIRST VIEWPORT: menu fixo no topo (Hoje / Clientes / Novo cliente /
+Previsão / Relatório) com a rota atual destacada.
+FINISH: revisão manual de alinhamento e ortografia/plural em todo texto
+em português, já que não há revisor automático disponível neste ambiente.
 -->`,
           }}
         />
+        <Nav />
         {children}
       </body>
     </html>
