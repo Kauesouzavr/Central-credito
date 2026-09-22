@@ -173,12 +173,20 @@ async function cicloDeEnvio(sock) {
 // main() usa essa referência, em vez de reiniciar o loop inteiro a cada queda.
 let sockAtual = null;
 
-// Depois de muitas quedas seguidas (sem nenhuma conexão de sucesso no meio),
+// Depois de muitas quedas seguidas (sem nenhuma conexão ESTÁVEL no meio),
 // para de tentar e derruba o processo — sem isso, um problema permanente
 // (sessão corrompida, protocolo incompatível) fica tentando de novo pra
 // sempre, em silêncio, parecendo que está tudo bem.
 let falhasConsecutivas = 0;
 const MAX_FALHAS_CONSECUTIVAS = 10;
+
+// Uma sessão corrompida costuma conectar por alguns segundos e cair nesse
+// meio-tempo, em loop (visto na prática: "Decrypted message with closed
+// session" e cai de novo). Só zera o contador de falhas depois de ficar
+// conectado por tempo suficiente — senão esse loop nunca soma falha nenhuma
+// (some conecta, reseta, cai — de novo, pra sempre) e o bot nunca desiste.
+const TEMPO_PARA_CONSIDERAR_ESTAVEL_MS = 30_000;
+let temporizadorEstabilidade = null;
 
 async function conectar() {
   const { state, saveCreds } = await useMultiFileAuthState(PASTA_SESSAO);
@@ -202,12 +210,18 @@ async function conectar() {
 
     if (connection === 'open') {
       sockAtual = sock;
-      falhasConsecutivas = 0;
       console.log('Conectado ao WhatsApp.');
+      temporizadorEstabilidade = setTimeout(() => {
+        falhasConsecutivas = 0;
+      }, TEMPO_PARA_CONSIDERAR_ESTAVEL_MS);
     }
 
     if (connection === 'close') {
       sockAtual = null;
+      if (temporizadorEstabilidade) {
+        clearTimeout(temporizadorEstabilidade);
+        temporizadorEstabilidade = null;
+      }
       const motivo = lastDisconnect?.error?.output?.statusCode;
       const deslogado = motivo === DisconnectReason.loggedOut;
       if (deslogado) {
@@ -228,7 +242,7 @@ function registrarFalhaEReconectar(motivo) {
   falhasConsecutivas += 1;
   if (falhasConsecutivas >= MAX_FALHAS_CONSECUTIVAS) {
     console.error(
-      `${motivo}: ${falhasConsecutivas} vezes seguidas sem conseguir ficar conectado. Desisti — confira a internet e o WhatsApp e rode "npm run whatsapp:bot" de novo.`
+      `${motivo}: ${falhasConsecutivas} vezes seguidas sem conseguir ficar conectado. Desisti — confira a internet. Se continuar caindo mesmo assim, a sessão salva (pasta whatsapp-auth) pode ter corrompido: apague-a e rode "npm run whatsapp:bot" de novo pra reconectar com um QR code novo.`
     );
     process.exit(1);
   }
