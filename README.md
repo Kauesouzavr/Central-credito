@@ -150,6 +150,18 @@ Testes automáticos (motor de risco, busca, tela "Hoje" e previsão de caixa): `
 
 **Régua de WhatsApp (Fase 6):** `npm run whatsapp:bot` inicia o bot (Baileys). Na primeira vez, escaneie o QR code que aparece no terminal (WhatsApp no celular → Aparelhos conectados → Conectar um aparelho); a sessão fica salva em `whatsapp-auth/` (não versionada) e reconecta sozinha depois disso. É um processo que fica rodando — não um comando de um clique só — e não dá pra hospedar na Vercel junto com o resto do app (ver "Decisões técnicas"). Bancos criados antes da Fase 6 precisam rodar também [`supabase/fase6-whatsapp.sql`](supabase/fase6-whatsapp.sql).
 
+**Ligar o bot sozinho ao entrar no Windows** (opcional, configurar uma vez por computador): depois de já ter escaneado o QR code pelo menos uma vez, registre uma tarefa no Agendador de Tarefas do Windows apontando pra [`scripts/iniciar-bot.bat`](scripts/iniciar-bot.bat), disparada por "Ao fazer logon" do seu usuário, com reinício automático se cair. Pelo PowerShell:
+
+```powershell
+$acao = New-ScheduledTaskAction -Execute "CAMINHO\ATE\O\PROJETO\scripts\iniciar-bot.bat" -WorkingDirectory "CAMINHO\ATE\O\PROJETO"
+$gatilho = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
+$config = New-ScheduledTaskSettingsSet -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero) -StartWhenAvailable
+$principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
+Register-ScheduledTask -TaskName "CentralCredito-WhatsAppBot" -Action $acao -Trigger $gatilho -Settings $config -Principal $principal -Description "Bot de WhatsApp do Central de Credito"
+```
+
+Troque `CAMINHO\ATE\O\PROJETO` pelo caminho real nesse computador. **Nunca rode o bot manualmente enquanto a tarefa agendada já estiver de pé** — duas instâncias ao mesmo tempo competem pela mesma sessão do WhatsApp (`whatsapp-auth/`), o que arrisca corromper a sessão ou desconectar o número. Pra ver se já tem uma rodando: `Get-ScheduledTask -TaskName CentralCredito-WhatsAppBot` (no PowerShell) mostra o estado.
+
 ## Estrutura do projeto
 
 ```
