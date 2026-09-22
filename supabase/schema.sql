@@ -73,6 +73,12 @@ create table if not exists configuracoes (
   peso_mudanca_padrao numeric(5,2) not null default 20,
   corte_risco_alto numeric(5,2) not null default 55,
   corte_risco_medio numeric(5,2) not null default 25,
+  -- Fase 6 (régua de WhatsApp via Baileys): limite de mensagens e atraso
+  -- aleatório entre envios, pra não mandar tudo em rajada. Null = sem limite.
+  whatsapp_limite_por_hora integer default 20,
+  whatsapp_limite_por_dia integer default 100,
+  whatsapp_atraso_min_segundos integer not null default 20,
+  whatsapp_atraso_max_segundos integer not null default 90,
   constraint configuracoes_linha_unica check (id = 1)
 );
 
