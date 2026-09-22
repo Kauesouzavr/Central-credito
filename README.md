@@ -4,7 +4,7 @@
 
 *English summary: a web app to manage store-credit ("pay later") sales — customers, receivables, partial payments, default-risk scoring and, on the roadmap, WhatsApp collection reminders and a cash-flow forecast. Built with Next.js (App Router + Server Actions) and Supabase (PostgreSQL).*
 
-**Status:** 🚧 em desenvolvimento — Fases 1 a 5 concluídas; próxima: Fase 6 (régua de cobrança por WhatsApp).
+**Status:** 🚧 em desenvolvimento — Fases 1 a 6 concluídas; próxima: Fase 7 (relatório semanal).
 
 ---
 
@@ -127,7 +127,7 @@ Além das tabelas, a view `titulos_com_saldo` entrega cada título já com saldo
 | 3 | **Motor de risco**: nota de 0 a 100 por cliente (atraso atual, perfil de cliente novo × antigo, mudança de padrão), com parâmetros configuráveis | ✅ |
 | 4 | **Tela "Hoje"**: números do dia, cliente de maior risco em destaque e fila de cobrança (com "Já cobrei") | ✅ |
 | 5 | **Previsão de caixa**: soma dos vencimentos × previsão ajustada pelo risco, em 4 semanas, com gráfico | ✅ |
-| 6 | **Régua de cobrança via WhatsApp** (Baileys): decide quem avisar/cobrar (`lib/regua.js`), monta o texto (`lib/mensagens-whatsapp.js`) e manda pelo bot (`scripts/whatsapp-bot.mjs`), com limite de mensagens e atraso aleatório entre envios | 🚧 |
+| 6 | **Régua de cobrança via WhatsApp** (Baileys): decide quem avisar/cobrar (`lib/regua.js`), monta o texto (`lib/mensagens-whatsapp.js`) e manda pelo bot (`scripts/whatsapp-bot.mjs`), com limite de mensagens e atraso aleatório entre envios | ✅ |
 | 7 | Relatório semanal | ⏳ |
 | 8 | Redesign visual | ⏳ |
 | 9 | Testes finais e ajuste dos parâmetros com dados reais | ⏳ |
