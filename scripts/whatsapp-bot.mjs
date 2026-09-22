@@ -26,6 +26,7 @@ import { montarRegua } from '../lib/regua.js';
 import { montarMensagemWhatsApp } from '../lib/mensagens-whatsapp.js';
 import { podeEnviarMais, atrasoAleatorioMs } from '../lib/limite-envio.js';
 import { formatarTelefoneE164, hojeBrasil, inicioDoDiaBrasil } from '../lib/util.js';
+import { MARCA_COBRANCA_MANUAL } from '../lib/hoje.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PASTA_SESSAO = path.join(__dirname, '..', 'whatsapp-auth');
@@ -43,11 +44,15 @@ function esperar(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Só conta mensagem que passou pelo WhatsApp de verdade — o "Já cobrei"
+// manual (app/actions.js) também grava status 'enviada', mas não usa o
+// Baileys, então não deve contar pro limite de mensagens.
 async function contarEnviadasDesde(desdeIso) {
   const { count, error } = await supabase
     .from('mensagens')
     .select('id', { count: 'exact', head: true })
     .eq('status', 'enviada')
+    .neq('texto', MARCA_COBRANCA_MANUAL)
     .gte('enviado_em', desdeIso);
   if (error) throw error;
   return count ?? 0;
@@ -63,16 +68,19 @@ async function cicloDeEnvio(sock) {
 
   const hoje = hojeBrasil();
 
-  const titulos = await buscarTudo(() =>
-    supabase
-      .from('titulos_com_saldo')
-      .select('id, cliente_id, data_vencimento, status, dias_atraso, valor_restante')
-      .order('id')
-  );
-  const clientes = await buscarTudo(() => supabase.from('clientes').select('id, nome, telefone').order('id'));
-  const mensagensEnviadas = await buscarTudo(() =>
-    supabase.from('mensagens').select('id, cliente_id, titulo_id, tipo, enviado_em').eq('status', 'enviada').order('id')
-  );
+  // As três consultas são independentes entre si — busca em paralelo.
+  const [titulos, clientes, mensagensEnviadas] = await Promise.all([
+    buscarTudo(() =>
+      supabase
+        .from('titulos_com_saldo')
+        .select('id, cliente_id, data_vencimento, status, dias_atraso, valor_restante')
+        .order('id')
+    ),
+    buscarTudo(() => supabase.from('clientes').select('id, nome, telefone').order('id')),
+    buscarTudo(() =>
+      supabase.from('mensagens').select('id, cliente_id, titulo_id, tipo, enviado_em').eq('status', 'enviada').order('id')
+    ),
+  ]);
 
   const envios = montarRegua({
     titulos,
@@ -91,10 +99,13 @@ async function cicloDeEnvio(sock) {
   console.log(`[${new Date().toLocaleTimeString('pt-BR')}] ${envios.length} mensagem(ns) pra mandar.`);
 
   for (const envio of envios) {
-    const desdeUltimaHora = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    // Reconsulta os dois a cada envio, sempre a partir do banco (não soma
+    // local): assim os limites continuam corretos mesmo se o ciclo demorar
+    // mais que uma hora, virar o dia no meio, ou se algum "marcar como
+    // enviada" falhar — nenhum desses casos desalinha a conta.
     const [enviadasUltimaHora, enviadasHoje] = await Promise.all([
-      contarEnviadasDesde(desdeUltimaHora),
-      contarEnviadasDesde(inicioDoDiaBrasil(hoje)),
+      contarEnviadasDesde(new Date(Date.now() - 60 * 60 * 1000).toISOString()),
+      contarEnviadasDesde(inicioDoDiaBrasil(hojeBrasil())),
     ]);
 
     if (
@@ -125,13 +136,29 @@ async function cicloDeEnvio(sock) {
       .single();
     if (erroInsert) {
       console.error(`Erro ao registrar mensagem de ${envio.cliente.nome}:`, erroInsert.message);
+      // Mesma pausa de sempre, mesmo sem mandar nada — sem isso, uma falha que
+      // se repete pros próximos da fila martela o banco sem nenhum intervalo.
+      await esperar(atrasoAleatorioMs(config.whatsapp_atraso_min_segundos, config.whatsapp_atraso_max_segundos));
       continue;
     }
 
     try {
       await sock.sendMessage(`${telefone}@s.whatsapp.net`, { text: texto });
-      await supabase.from('mensagens').update({ status: 'enviada', enviado_em: new Date().toISOString() }).eq('id', registro.id);
-      console.log(`Mandei pra ${envio.cliente.nome} (${tipo}).`);
+      const { error: erroUpdate } = await supabase
+        .from('mensagens')
+        .update({ status: 'enviada', enviado_em: new Date().toISOString() })
+        .eq('id', registro.id);
+      if (erroUpdate) {
+        // A mensagem já foi mandada de verdade pro WhatsApp — só o registro no
+        // banco que não atualizou. Avisa alto: sem isso a régua vai achar que
+        // esse cliente nunca foi avisado e manda nele de novo no próximo ciclo.
+        console.error(
+          `Mandei pra ${envio.cliente.nome}, mas não consegui marcar como 'enviada' no banco:`,
+          erroUpdate.message
+        );
+      } else {
+        console.log(`Mandei pra ${envio.cliente.nome} (${tipo}).`);
+      }
     } catch (e) {
       await supabase.from('mensagens').update({ status: 'erro' }).eq('id', registro.id);
       console.error(`Erro ao mandar pra ${envio.cliente.nome}:`, e.message);
@@ -145,6 +172,13 @@ async function cicloDeEnvio(sock) {
 // `sockAtual` sempre aponta pro socket vivo no momento; o loop de envio em
 // main() usa essa referência, em vez de reiniciar o loop inteiro a cada queda.
 let sockAtual = null;
+
+// Depois de muitas quedas seguidas (sem nenhuma conexão de sucesso no meio),
+// para de tentar e derruba o processo — sem isso, um problema permanente
+// (sessão corrompida, protocolo incompatível) fica tentando de novo pra
+// sempre, em silêncio, parecendo que está tudo bem.
+let falhasConsecutivas = 0;
+const MAX_FALHAS_CONSECUTIVAS = 10;
 
 async function conectar() {
   const { state, saveCreds } = await useMultiFileAuthState(PASTA_SESSAO);
@@ -168,6 +202,7 @@ async function conectar() {
 
     if (connection === 'open') {
       sockAtual = sock;
+      falhasConsecutivas = 0;
       console.log('Conectado ao WhatsApp.');
     }
 
@@ -181,14 +216,35 @@ async function conectar() {
         );
         process.exit(1);
       }
-      console.log('Conexão caiu, tentando reconectar...');
-      conectar();
+      registrarFalhaEReconectar('Conexão caiu');
     }
   });
 }
 
+// Conta mais uma falha (queda ou erro ao tentar conectar) e ou tenta de novo
+// em 10s, ou — depois de muitas seguidas — desiste e derruba o processo com
+// uma mensagem clara, em vez de ficar tentando pra sempre sem avisar ninguém.
+function registrarFalhaEReconectar(motivo) {
+  falhasConsecutivas += 1;
+  if (falhasConsecutivas >= MAX_FALHAS_CONSECUTIVAS) {
+    console.error(
+      `${motivo}: ${falhasConsecutivas} vezes seguidas sem conseguir ficar conectado. Desisti — confira a internet e o WhatsApp e rode "npm run whatsapp:bot" de novo.`
+    );
+    process.exit(1);
+  }
+  console.log(`${motivo}, tentando reconectar (${falhasConsecutivas}/${MAX_FALHAS_CONSECUTIVAS})...`);
+  setTimeout(conectarComRetentativa, 10_000);
+}
+
+// Tenta conectar; se falhar de cara (rede fora do ar, sessão corrompida
+// etc.), conta como falha e agenda nova tentativa — sem isso, uma rejeição
+// sem handler aqui derrubaria o processo inteiro sem nenhuma mensagem clara.
+function conectarComRetentativa() {
+  conectar().catch((e) => registrarFalhaEReconectar(`Erro ao conectar (${e.message})`));
+}
+
 async function main() {
-  await conectar();
+  conectarComRetentativa();
   while (!sockAtual) await esperar(500); // espera a primeira conexão abrir (ou o QR ser escaneado)
 
   // eslint-disable-next-line no-constant-condition
