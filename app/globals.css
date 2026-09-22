@@ -1,24 +1,94 @@
+/* Central de Crédito — Fase 8 (redesign visual)
+   Mundo: talão de recibo com papel-carbono. Ver o comentário de decisão
+   no <body> (app/layout.js) pro contrato completo. Cor reservada só pro
+   acento de marca e pro sinal de status/risco — nunca decorativa. */
+
 * {
   box-sizing: border-box;
+}
+
+:root {
+  /* papel */
+  --papel: #f7f1e4;
+  --papel-cartao: #fffdf6;
+  --linha: #ddd0b2;
+  --linha-forte: #c9b98e;
+
+  /* tinta */
+  --tinta: #2b2620;
+  --tinta-suave: #6b6255;
+
+  /* acento único: roxo-carbono, tinta de papel-carbono */
+  --carbono: #4b3b6b;
+  --carbono-escuro: #382c50;
+  --carbono-fundo: #ece7f5;
+
+  /* selos de status (mesma família do sistema de risco: vermelho/âmbar/verde) */
+  --selo-vermelho-tinta: #8a2e22;
+  --selo-vermelho-fundo: #fbe9e2;
+  --selo-ambar-tinta: #8a5a12;
+  --selo-ambar-fundo: #fbf0da;
+  --selo-verde-tinta: #2e6b3e;
+  --selo-verde-fundo: #e6f2e3;
+
+  --raio: 6px;
+  --sombra-cartao: 0 1px 0 var(--linha-forte), 0 2px 6px rgba(43, 38, 32, 0.08);
+}
+
+html {
+  background: var(--papel);
 }
 
 body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 18px;
-  line-height: 1.5;
-  color: #1a1a1a;
-  background: #fff;
+  line-height: 1.55;
+  color: var(--tinta);
+  background: var(--papel);
   margin: 0;
 }
 
 .pagina {
   max-width: 720px;
   margin: 0 auto;
-  padding: 32px 20px;
+  padding: 32px 20px 64px;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 h1 {
   font-size: 1.8em;
+  margin: 0 0 4px;
+}
+
+h2 {
+  font-size: 1.3em;
+  margin: 28px 0 12px;
+}
+
+h3 {
+  font-size: 1.05em;
+  margin: 20px 0 8px;
+}
+
+a {
+  color: var(--carbono);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  color: var(--carbono-escuro);
+}
+
+:focus-visible {
+  outline: 3px solid var(--carbono);
+  outline-offset: 2px;
 }
 
 .cabecalho {
@@ -29,10 +99,12 @@ h1 {
   flex-wrap: wrap;
 }
 
+/* ---------- Formulários ---------- */
+
 .formulario {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   max-width: 480px;
 }
 
@@ -40,35 +112,79 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .formulario input,
 .formulario select {
   font-size: 1em;
-  padding: 10px 12px;
-  border: 1px solid #999;
-  border-radius: 6px;
+  font-family: inherit;
+  padding: 12px 14px;
+  border: 2px solid var(--linha-forte);
+  border-radius: var(--raio);
+  background: var(--papel-cartao);
+  color: var(--tinta);
 }
+
+.formulario input:focus,
+.formulario select:focus {
+  border-color: var(--carbono);
+}
+
+/* ---------- Botões ----------
+   Grandes e óbvios de propósito: o dono da loja precisa reconhecer um botão
+   sem pensar. O ":active" "carimba" — a sombra recolhe, como um carimbo de
+   borracha batendo no papel. */
 
 .botao,
 button {
   display: inline-block;
+  font-family: inherit;
   font-size: 1em;
-  padding: 12px 20px;
-  border-radius: 8px;
+  font-weight: 700;
+  padding: 13px 22px;
+  border-radius: var(--raio);
   border: none;
-  background: #1a1a1a;
+  background: var(--carbono);
   color: #fff;
   cursor: pointer;
   text-decoration: none;
   text-align: center;
+  box-shadow: 0 3px 0 var(--carbono-escuro);
+  transition: transform 0.06s ease, box-shadow 0.06s ease;
+}
+
+.botao:hover,
+button:hover {
+  background: var(--carbono-escuro);
+}
+
+.botao:active,
+button:active {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--carbono-escuro);
 }
 
 .botao-secundario {
-  background: #fff;
-  color: #1a1a1a;
-  border: 1px solid #1a1a1a;
+  background: var(--papel-cartao);
+  color: var(--carbono);
+  border: 2px solid var(--carbono);
+  box-shadow: 0 3px 0 var(--linha-forte);
+}
+
+.botao-secundario:hover {
+  background: var(--carbono-fundo);
+}
+
+.botao-secundario:active {
+  box-shadow: 0 0 0 var(--linha-forte);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+  box-shadow: none;
+  transform: none;
 }
 
 .menu-inicial {
@@ -78,6 +194,8 @@ button {
   margin-top: 16px;
 }
 
+/* ---------- Cartões (canhoto de recibo) ---------- */
+
 .cartoes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -86,28 +204,34 @@ button {
 }
 
 .cartao {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 12px 16px;
+  background: var(--papel-cartao);
+  border: 1px solid var(--linha);
+  border-left: 4px solid var(--carbono);
+  border-radius: var(--raio);
+  padding: 14px 16px;
+  box-shadow: var(--sombra-cartao);
 }
 
 .cartao-numero {
   margin: 0;
   font-size: 1.6em;
-  font-weight: 700;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
 .cartao-rotulo {
-  margin: 0;
+  margin: 4px 0 0;
   font-size: 0.9em;
-  color: #444;
+  color: var(--tinta-suave);
 }
 
 .cartao-variacao {
   margin: 6px 0 0;
   font-size: 0.85em;
-  color: #666;
+  color: var(--tinta-suave);
 }
+
+/* ---------- Fila de cobrança ---------- */
 
 .fila li {
   display: flex;
@@ -128,7 +252,8 @@ button {
 .cobrados summary {
   cursor: pointer;
   margin: 16px 0 8px;
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--carbono);
 }
 
 .lista-clientes {
@@ -142,15 +267,29 @@ button {
 .lista-clientes li a {
   display: block;
   padding: 14px 16px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--papel-cartao);
   color: inherit;
   text-decoration: none;
 }
 
 .lista-clientes li a:hover {
-  background: #f5f5f5;
+  border-color: var(--carbono);
+  background: var(--carbono-fundo);
 }
+
+.lista-clientes .linha-risco {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  font-size: 0.9em;
+  color: var(--tinta-suave);
+}
+
+/* ---------- Tabelas ---------- */
 
 .tabela-titulos {
   width: 100%;
@@ -158,33 +297,44 @@ button {
   margin-top: 12px;
 }
 
-.tabela-titulos th,
+.tabela-titulos th {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 2px solid var(--linha-forte);
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--tinta-suave);
+}
+
 .tabela-titulos td {
   text-align: left;
   padding: 10px 8px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px dashed var(--linha);
+  font-variant-numeric: tabular-nums;
 }
 
+/* ---------- Mensagens ---------- */
+
 .erro {
-  color: #b00020;
-  font-weight: 600;
-  background: #fdecea;
-  padding: 12px;
-  border-radius: 6px;
+  color: var(--selo-vermelho-tinta);
+  font-weight: 700;
+  background: var(--selo-vermelho-fundo);
+  padding: 12px 14px;
+  border-radius: var(--raio);
+  border-left: 4px solid var(--selo-vermelho-tinta);
 }
 
 .sucesso {
-  color: #1b5e20;
-  font-weight: 600;
-  background: #e8f5e9;
-  padding: 12px;
-  border-radius: 6px;
+  color: var(--selo-verde-tinta);
+  font-weight: 700;
+  background: var(--selo-verde-fundo);
+  padding: 12px 14px;
+  border-radius: var(--raio);
+  border-left: 4px solid var(--selo-verde-tinta);
 }
 
-button:disabled {
-  opacity: 0.6;
-  cursor: wait;
-}
+/* ---------- Busca ---------- */
 
 .busca {
   display: flex;
@@ -198,55 +348,76 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-weight: 600;
+  font-weight: 700;
   flex: 1 1 260px;
 }
 
 .busca input {
   font-size: 1em;
-  padding: 10px 12px;
-  border: 1px solid #999;
-  border-radius: 6px;
+  font-family: inherit;
+  padding: 12px 14px;
+  border: 2px solid var(--linha-forte);
+  border-radius: var(--raio);
+  background: var(--papel-cartao);
+  color: var(--tinta);
 }
 
-.etiqueta-risco {
+.busca input:focus {
+  border-color: var(--carbono);
+}
+
+/* ---------- Selos: risco do cliente e status do título ----------
+   O carimbo é o motivo central do redesign: rótulo girado, borda um pouco
+   irregular (o "raio" desigual imita o carimbo de borracha batendo torto),
+   letras maiúsculas. Cor só aparece aqui e no acento de marca. */
+
+.etiqueta-risco,
+.selo {
   display: inline-block;
-  padding: 2px 12px;
-  border-radius: 999px;
-  border: 1px solid;
-  font-weight: 700;
-  font-size: 0.85em;
+  padding: 3px 12px;
+  border-radius: 3px 8px 3px 8px;
+  border: 2px solid;
+  font-weight: 800;
+  font-size: 0.78em;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  transform: rotate(-2deg);
 }
 
-.risco-alto {
-  color: #b00020;
-  background: #fdecea;
+.risco-alto,
+.selo-atrasado {
+  color: var(--selo-vermelho-tinta);
+  background: var(--selo-vermelho-fundo);
+  border-color: var(--selo-vermelho-tinta);
 }
 
 .risco-medio {
-  color: #8a4b00;
-  background: #fff4e5;
+  color: var(--selo-ambar-tinta);
+  background: var(--selo-ambar-fundo);
+  border-color: var(--selo-ambar-tinta);
 }
 
-.risco-baixo {
-  color: #1b5e20;
-  background: #e8f5e9;
+.risco-baixo,
+.selo-pago {
+  color: var(--selo-verde-tinta);
+  background: var(--selo-verde-fundo);
+  border-color: var(--selo-verde-tinta);
 }
 
-.lista-clientes .linha-risco {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 6px;
-  font-size: 0.9em;
-  color: #444;
+.selo-em_aberto {
+  color: var(--tinta-suave);
+  background: var(--papel);
+  border-color: var(--linha-forte);
 }
+
+/* ---------- Caixa de risco em destaque ---------- */
 
 .caixa-risco {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 12px 16px;
+  background: var(--papel-cartao);
+  border: 1px solid var(--linha);
+  border-left: 4px solid var(--carbono);
+  border-radius: var(--raio);
+  padding: 14px 16px;
   margin: 16px 0;
 }
 
@@ -257,8 +428,10 @@ button:disabled {
 
 .caixa-risco details {
   font-size: 0.9em;
-  color: #444;
+  color: var(--tinta-suave);
 }
+
+/* ---------- Ações de título ---------- */
 
 .marcar-tudo {
   display: flex;
@@ -267,6 +440,9 @@ button:disabled {
   gap: 16px;
   flex-wrap: wrap;
   margin-top: 8px;
+  padding: 12px 16px;
+  background: var(--carbono-fundo);
+  border-radius: var(--raio);
 }
 
 .marcar-tudo p {
@@ -274,7 +450,8 @@ button:disabled {
 }
 
 .linha-acoes td {
-  background: #fafafa;
+  background: var(--papel);
+  border-bottom: 1px dashed var(--linha);
 }
 
 .acoes-titulo {
@@ -287,21 +464,25 @@ button:disabled {
 .acoes-titulo summary {
   cursor: pointer;
   padding: 12px 20px;
-  border: 1px solid #1a1a1a;
-  border-radius: 8px;
-  background: #fff;
+  border: 2px solid var(--carbono);
+  border-radius: var(--raio);
+  background: var(--papel-cartao);
+  color: var(--carbono);
+  font-weight: 700;
 }
 
 .acoes-titulo details[open] summary {
   margin-bottom: 12px;
 }
 
+/* ---------- Legenda e gráfico (previsão de caixa) ---------- */
+
 .legenda {
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
   font-size: 0.9em;
-  color: #52514e;
+  color: var(--tinta-suave);
 }
 
 .chave::before {
@@ -315,11 +496,11 @@ button:disabled {
 }
 
 .chave-previsto::before {
-  background: #2a78d6;
+  background: var(--carbono);
 }
 
 .chave-diferenca::before {
-  background: #b0aea4;
+  background: var(--linha-forte);
 }
 
 .grafico {
@@ -337,13 +518,16 @@ button:disabled {
 
 .barra-rotulo span {
   font-size: 0.9em;
-  color: #52514e;
+  color: var(--tinta-suave);
 }
 
 .barra-trilho {
   display: flex;
   gap: 2px;
   height: 20px;
+  background: var(--papel);
+  border-radius: 3px;
+  overflow: hidden;
 }
 
 .barra-previsto,
@@ -352,18 +536,14 @@ button:disabled {
 }
 
 .barra-previsto {
-  background: #2a78d6;
+  background: var(--carbono);
 }
 
 .barra-diferenca {
-  background: #b0aea4;
-}
-
-.barra-previsto:last-child,
-.barra-diferenca {
-  border-radius: 0 4px 4px 0;
+  background: var(--linha-forte);
 }
 
 .barra-valores {
   margin: 4px 0 0;
+  font-variant-numeric: tabular-nums;
 }

@@ -135,7 +135,9 @@ export default async function FichaCliente({ params, searchParams }) {
                   <td>{formatarMoeda(t.valor_restante)}</td>
                   <td>{formatarData(t.data_vencimento)}</td>
                   <td>{t.forma_pagamento}</td>
-                  <td>{STATUS_LABEL[t.status] || t.status}</td>
+                  <td>
+                    <span className={`selo selo-${t.status}`}>{STATUS_LABEL[t.status] || t.status}</span>
+                  </td>
                 </tr>
 
                 {t.status !== 'pago' && (
