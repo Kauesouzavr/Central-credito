@@ -9,3 +9,8 @@ node_modules/
 .vercel/
 *.log
 .DS_Store
+
+# Sessão do WhatsApp (Fase 6, Baileys): equivale a estar logado no WhatsApp
+# Web nesse número. Nunca versionar — quem tiver essa pasta manda mensagem
+# como se fosse o número conectado.
+whatsapp-auth/

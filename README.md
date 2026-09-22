@@ -60,6 +60,7 @@ Para cada cliente: **previsão = saldo em aberto × chance de pagar**, com chanc
 | **Motor de risco como função pura, testada, com parâmetros no banco** | Regra de negócio fácil de testar e de ajustar sem mexer em código. O histórico é lido página por página: o Supabase limita 1000 linhas por consulta, e ler só a primeira daria nota errada sem avisar. |
 | **Tela "Hoje" também como função pura** (`lib/hoje.js`), separada da leitura do banco | Contagens, ordem da fila e prazos são testados sem precisar de banco nem de navegador. |
 | **"Já cobrei" grava na tabela `mensagens`** (a mesma que a régua de WhatsApp vai usar) | A fila e o contador de "nunca cobrados" já funcionam agora, e a Fase 6 entra sem migração: as mensagens automáticas passam a contar como cobrança do mesmo jeito. |
+| **WhatsApp via Baileys** (biblioteca não-oficial, conexão por QR code), não a Cloud API oficial da Meta | Fase de demonstração pra fechar negócio: a Cloud API exige verificação de empresa e aprovação de template antes de mandar qualquer mensagem, o que atrasa mostrar o sistema funcionando. Baileys manda texto livre na hora. Em troca, roda como processo à parte (`scripts/whatsapp-bot.mjs`), não dá pra hospedar na Vercel (serverless), e tem risco (baixo, com o volume daqui) de bloqueio por não ser API oficial — mitigado com limite de mensagens por hora/dia e atraso aleatório entre envios. Reavaliar se/quando for pra produção de verdade. |
 
 ## Modelo de dados
 
@@ -126,7 +127,7 @@ Além das tabelas, a view `titulos_com_saldo` entrega cada título já com saldo
 | 3 | **Motor de risco**: nota de 0 a 100 por cliente (atraso atual, perfil de cliente novo × antigo, mudança de padrão), com parâmetros configuráveis | ✅ |
 | 4 | **Tela "Hoje"**: números do dia, cliente de maior risco em destaque e fila de cobrança (com "Já cobrei") | ✅ |
 | 5 | **Previsão de caixa**: soma dos vencimentos × previsão ajustada pelo risco, em 4 semanas, com gráfico | ✅ |
-| 6 | Régua de cobrança via WhatsApp | ⏳ |
+| 6 | **Régua de cobrança via WhatsApp** (Baileys): decide quem avisar/cobrar (`lib/regua.js`), monta o texto (`lib/mensagens-whatsapp.js`) e manda pelo bot (`scripts/whatsapp-bot.mjs`), com limite de mensagens e atraso aleatório entre envios | 🚧 |
 | 7 | Relatório semanal | ⏳ |
 | 8 | Redesign visual | ⏳ |
 | 9 | Testes finais e ajuste dos parâmetros com dados reais | ⏳ |
@@ -146,6 +147,8 @@ Pré-requisitos: Node.js 20+ e um projeto no [Supabase](https://supabase.com) (o
 Testes automáticos (motor de risco, busca, tela "Hoje" e previsão de caixa): `npm test`.
 
 **Dados fictícios para testar:** `npm run seed:teste` cria 10 clientes de mentira, cada um numa situação diferente do motor de risco (cliente novo, antigo que já quitou tudo, atrasado, com pagamento parcial...). Eles são marcados com o segmento `TESTE` e telefones inválidos (`(00) 00000-00XX`), e `npm run seed:teste:remover` apaga só eles, sem tocar nos clientes reais. Os comandos leem o `.env.local`.
+
+**Régua de WhatsApp (Fase 6):** `npm run whatsapp:bot` inicia o bot (Baileys). Na primeira vez, escaneie o QR code que aparece no terminal (WhatsApp no celular → Aparelhos conectados → Conectar um aparelho); a sessão fica salva em `whatsapp-auth/` (não versionada) e reconecta sozinha depois disso. É um processo que fica rodando — não um comando de um clique só — e não dá pra hospedar na Vercel junto com o resto do app (ver "Decisões técnicas"). Bancos criados antes da Fase 6 precisam rodar também [`supabase/fase6-whatsapp.sql`](supabase/fase6-whatsapp.sql).
 
 ## Estrutura do projeto
 
@@ -176,11 +179,19 @@ lib/
   previsao.js                 Previsão de caixa: períodos, chance de pagar, diferença (função pura)
   previsao.test.js            Testes da previsão de caixa
   carregar-previsao.js        Busca os dados no Supabase e monta a previsão
+  regua.js                    Decide quem recebe aviso/cobrança hoje (função pura)
+  regua.test.js               Testes da régua
+  mensagens-whatsapp.js       Monta o texto de cada mensagem (função pura)
+  mensagens-whatsapp.test.js  Testes dos textos
+  limite-envio.js             Limite de mensagens por hora/dia e atraso aleatório (função pura)
+  limite-envio.test.js        Testes do limite de envio
 scripts/
   seed-teste.mjs              Cria/remove os clientes fictícios de teste
+  whatsapp-bot.mjs            Bot de WhatsApp (Baileys): conecta e roda a régua em loop
 supabase/
   schema.sql                  Schema completo (tabelas, view, RLS)
   correcao-fuso.sql           Correção de fuso para bancos já existentes
+  fase6-whatsapp.sql          Colunas de configuração da régua, para bancos já existentes
 ```
 
 ## Screenshots

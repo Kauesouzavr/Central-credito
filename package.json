@@ -6,14 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --no-warnings --test lib/risco.test.js lib/util.test.js lib/hoje.test.js lib/previsao.test.js lib/regua.test.js lib/mensagens-whatsapp.test.js",
+    "test": "node --no-warnings --test lib/risco.test.js lib/util.test.js lib/hoje.test.js lib/previsao.test.js lib/regua.test.js lib/mensagens-whatsapp.test.js lib/limite-envio.test.js",
     "seed:teste": "node --no-warnings --env-file=.env.local scripts/seed-teste.mjs",
-    "seed:teste:remover": "node --no-warnings --env-file=.env.local scripts/seed-teste.mjs --remover"
+    "seed:teste:remover": "node --no-warnings --env-file=.env.local scripts/seed-teste.mjs --remover",
+    "whatsapp:bot": "node --no-warnings --env-file=.env.local scripts/whatsapp-bot.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
     "next": "^16.2.11",
+    "pino": "^10.3.1",
+    "qrcode-terminal": "^0.12.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "@supabase/supabase-js": "^2.45.0"
+    "react-dom": "^19.0.0"
   }
 }
