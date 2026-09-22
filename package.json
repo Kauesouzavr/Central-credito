@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --no-warnings --test lib/risco.test.js lib/util.test.js lib/hoje.test.js lib/previsao.test.js lib/regua.test.js lib/mensagens-whatsapp.test.js lib/limite-envio.test.js",
+    "test": "node --no-warnings --test lib/risco.test.js lib/util.test.js lib/hoje.test.js lib/previsao.test.js lib/regua.test.js lib/mensagens-whatsapp.test.js lib/limite-envio.test.js lib/relatorio.test.js",
     "seed:teste": "node --no-warnings --env-file=.env.local scripts/seed-teste.mjs",
     "seed:teste:remover": "node --no-warnings --env-file=.env.local scripts/seed-teste.mjs --remover",
     "whatsapp:bot": "node --no-warnings --env-file=.env.local scripts/whatsapp-bot.mjs"

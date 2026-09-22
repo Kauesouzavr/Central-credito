@@ -103,6 +103,12 @@ button {
   color: #444;
 }
 
+.cartao-variacao {
+  margin: 6px 0 0;
+  font-size: 0.85em;
+  color: #666;
+}
+
 .fila li {
   display: flex;
   align-items: stretch;
