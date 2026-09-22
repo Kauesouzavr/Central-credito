@@ -3,10 +3,16 @@
 // Processo que fica rodando (não é um script de um clique só): conecta no
 // WhatsApp por QR code, mantém a sessão salva em ./whatsapp-auth (não
 // versionada — está no .gitignore, é a "senha" da sessão) e, a cada
-// INTERVALO_CICLO_MS, olha o banco e manda as mensagens que a régua
-// (lib/regua.js) decidir que são de hoje: aviso antes do vencimento,
-// vencimento e cobrança de atraso. Respeita limite de mensagens por
-// hora/dia e um atraso aleatório entre um envio e o outro (lib/limite-envio.js).
+// INTERVALO_CICLO_MS, faz duas coisas:
+//   1. Enfileira (grava em `mensagens`, status 'pendente') o que a régua
+//      (lib/regua.js) decidir que é de hoje: aviso antes do vencimento,
+//      vencimento e cobrança de atraso.
+//   2. Manda tudo que estiver 'pendente' — o que acabou de enfileirar, e
+//      também o que outra parte do app já deixou pronto (ex.: a mensagem de
+//      'cadastro', gravada por app/clientes/novo/actions.js na hora que um
+//      cliente novo é criado).
+// Respeita limite de mensagens por hora/dia e um atraso aleatório entre um
+// envio e o outro (lib/limite-envio.js).
 //
 //   npm run whatsapp:bot
 //
@@ -58,47 +64,96 @@ async function contarEnviadasDesde(desdeIso) {
   return count ?? 0;
 }
 
-// Um ciclo: lê o banco, monta a régua de hoje e manda o que ainda faltar,
-// respeitando o limite configurado. Para no meio se bater o limite — o resto
-// fica pra tentar nos próximos ciclos, sem se perder (não repete quem já foi
-// marcado como 'enviada').
-async function cicloDeEnvio(sock) {
-  const { data: config, error: erroConfig } = await supabase.from('configuracoes').select('*').eq('id', 1).single();
-  if (erroConfig) throw erroConfig;
-
+// Passo 1: olha a régua e enfileira (grava 'pendente') o que for de hoje.
+// Não manda nada aqui — só decide e grava. `mensagens` com status 'enviada'
+// OU 'pendente' contam como "já enfileirado" pra régua não duplicar (lib/regua.js).
+//
+// O texto de antes_vencimento/vencimento/atraso é calculado AGORA (dias até
+// vencer, valor em aberto), não na hora de mandar — se a fila acumular (bot
+// fora do ar, ou mais mensagem num ciclo do que o limite por hora permite) e
+// um envio só sair em outro ciclo, o texto pode ficar um pouco desatualizado
+// (ex.: "vence em 3 dias" chegando quando já venceu). Não deve acontecer no
+// volume de uma loja pequena com os limites padrão, mas é a troca feita aqui
+// — resolver de verdade pediria recalcular o texto na hora do envio.
+async function enfileirarRegua(config, clientes) {
   const hoje = hojeBrasil();
 
-  // As três consultas são independentes entre si — busca em paralelo.
-  const [titulos, clientes, mensagensEnviadas] = await Promise.all([
+  const [titulos, mensagensExistentes] = await Promise.all([
     buscarTudo(() =>
       supabase
         .from('titulos_com_saldo')
         .select('id, cliente_id, data_vencimento, status, dias_atraso, valor_restante')
         .order('id')
     ),
-    buscarTudo(() => supabase.from('clientes').select('id, nome, telefone').order('id')),
     buscarTudo(() =>
-      supabase.from('mensagens').select('id, cliente_id, titulo_id, tipo, enviado_em').eq('status', 'enviada').order('id')
+      supabase
+        .from('mensagens')
+        .select('id, cliente_id, titulo_id, tipo, enviado_em')
+        .in('status', ['enviada', 'pendente'])
+        .order('id')
     ),
   ]);
 
   const envios = montarRegua({
     titulos,
     clientes,
-    mensagensEnviadas,
+    mensagensEnviadas: mensagensExistentes,
     hoje,
     diasAntesAviso: Number(config.dias_antes_aviso),
     diasRepetirCobranca: Number(config.dias_repetir_cobranca),
   });
 
-  if (envios.length === 0) {
+  for (const envio of envios) {
+    // Confere o telefone JÁ AQUI, antes de gravar — não em mandarPendentes.
+    // Se validasse só na hora de mandar, um telefone inválido viraria 'erro',
+    // a régua não reconhece 'erro' como "já enfileirado" (de propósito: erro
+    // de rede precisa poder tentar de novo) e o mesmo cliente voltaria a ser
+    // enfileirado e falhar, pra sempre, todo ciclo. Assim ele nem entra na fila.
+    const telefone = formatarTelefoneE164(envio.cliente.telefone);
+    if (!telefone) {
+      // De propósito NÃO grava nada aqui (diferente de mandarPendentes, que
+      // marca 'erro' pro mesmo caso): a régua ignora 'erro' pra permitir
+      // retentativa depois de falha transitória, então gravar 'erro' aqui
+      // faria essa mesma mensagem ser recriada e falhar de novo a cada
+      // ciclo, pra sempre — o problema que essa checagem existe pra evitar.
+      console.log(`Pulei ${envio.cliente.nome}: telefone "${envio.cliente.telefone}" não parece válido.`);
+      continue;
+    }
+
+    const { tipo, texto } = montarMensagemWhatsApp(envio);
+    const tituloId = envio.titulo ? envio.titulo.id : null; // 'atraso' pode juntar vários títulos: não amarra a um só
+    const { error: erroInsert } = await supabase
+      .from('mensagens')
+      .insert({ cliente_id: envio.cliente.id, titulo_id: tituloId, tipo, texto, status: 'pendente' });
+    if (erroInsert) {
+      console.error(`Erro ao enfileirar mensagem de ${envio.cliente.nome}:`, erroInsert.message);
+      // Mesma pausa que mandarPendentes usa entre envios — sem ela, uma falha
+      // que se repete pros próximos da fila martela o banco sem intervalo.
+      await esperar(atrasoAleatorioMs(config.whatsapp_atraso_min_segundos, config.whatsapp_atraso_max_segundos));
+    }
+  }
+}
+
+// Passo 2: manda tudo que estiver 'pendente' — da régua ou de qualquer outro
+// lugar do app (ex.: cadastro) — respeitando o limite configurado. Para no
+// meio se bater o limite; o resto fica 'pendente' pro próximo ciclo.
+// `clientes` já vem carregado de cicloDeEnvio — cobre qualquer cliente com
+// mensagem pendente, mesmo um que a régua nunca teria escolhido (cadastro).
+async function mandarPendentes(sock, config, clientes) {
+  const pendentes = await buscarTudo(() =>
+    supabase.from('mensagens').select('id, cliente_id, tipo, texto').eq('status', 'pendente').order('criado_em')
+  );
+
+  if (pendentes.length === 0) {
     console.log(`[${new Date().toLocaleTimeString('pt-BR')}] Nada pra mandar agora.`);
     return;
   }
 
-  console.log(`[${new Date().toLocaleTimeString('pt-BR')}] ${envios.length} mensagem(ns) pra mandar.`);
+  console.log(`[${new Date().toLocaleTimeString('pt-BR')}] ${pendentes.length} mensagem(ns) pra mandar.`);
 
-  for (const envio of envios) {
+  const clientePorId = new Map(clientes.map((c) => [c.id, c]));
+
+  for (const msg of pendentes) {
     // Reconsulta os dois a cada envio, sempre a partir do banco (não soma
     // local): assim os limites continuam corretos mesmo se o ciclo demorar
     // mais que uma hora, virar o dia no meio, ou se algum "marcar como
@@ -120,52 +175,53 @@ async function cicloDeEnvio(sock) {
       break;
     }
 
-    const telefone = formatarTelefoneE164(envio.cliente.telefone);
-    const { tipo, texto } = montarMensagemWhatsApp(envio);
-    const tituloId = envio.titulo ? envio.titulo.id : null; // 'atraso' pode juntar vários títulos: não amarra a um só
+    const cliente = clientePorId.get(msg.cliente_id);
+    const telefone = cliente ? formatarTelefoneE164(cliente.telefone) : null;
+    const nome = cliente ? cliente.nome : msg.cliente_id;
 
     if (!telefone) {
-      console.log(`Pulei ${envio.cliente.nome}: telefone "${envio.cliente.telefone}" não parece válido.`);
-      continue;
-    }
-
-    const { data: registro, error: erroInsert } = await supabase
-      .from('mensagens')
-      .insert({ cliente_id: envio.cliente.id, titulo_id: tituloId, tipo, texto, status: 'pendente' })
-      .select('id')
-      .single();
-    if (erroInsert) {
-      console.error(`Erro ao registrar mensagem de ${envio.cliente.nome}:`, erroInsert.message);
-      // Mesma pausa de sempre, mesmo sem mandar nada — sem isso, uma falha que
-      // se repete pros próximos da fila martela o banco sem nenhum intervalo.
+      console.log(`Pulei ${nome}: telefone "${cliente?.telefone ?? '—'}" não parece válido.`);
+      // Marca como erro em vez de deixar 'pendente' pra sempre — sem isso,
+      // um telefone inválido reaparece nessa mesma checagem a cada ciclo,
+      // sem nenhum jeito de saber (fora de olhar o log) que nunca vai sair.
+      await supabase.from('mensagens').update({ status: 'erro' }).eq('id', msg.id);
       await esperar(atrasoAleatorioMs(config.whatsapp_atraso_min_segundos, config.whatsapp_atraso_max_segundos));
       continue;
     }
 
     try {
-      await sock.sendMessage(`${telefone}@s.whatsapp.net`, { text: texto });
+      await sock.sendMessage(`${telefone}@s.whatsapp.net`, { text: msg.texto });
       const { error: erroUpdate } = await supabase
         .from('mensagens')
         .update({ status: 'enviada', enviado_em: new Date().toISOString() })
-        .eq('id', registro.id);
+        .eq('id', msg.id);
       if (erroUpdate) {
         // A mensagem já foi mandada de verdade pro WhatsApp — só o registro no
         // banco que não atualizou. Avisa alto: sem isso a régua vai achar que
         // esse cliente nunca foi avisado e manda nele de novo no próximo ciclo.
-        console.error(
-          `Mandei pra ${envio.cliente.nome}, mas não consegui marcar como 'enviada' no banco:`,
-          erroUpdate.message
-        );
+        console.error(`Mandei pra ${nome}, mas não consegui marcar como 'enviada' no banco:`, erroUpdate.message);
       } else {
-        console.log(`Mandei pra ${envio.cliente.nome} (${tipo}).`);
+        console.log(`Mandei pra ${nome} (${msg.tipo}).`);
       }
     } catch (e) {
-      await supabase.from('mensagens').update({ status: 'erro' }).eq('id', registro.id);
-      console.error(`Erro ao mandar pra ${envio.cliente.nome}:`, e.message);
+      await supabase.from('mensagens').update({ status: 'erro' }).eq('id', msg.id);
+      console.error(`Erro ao mandar pra ${nome}:`, e.message);
     }
 
     await esperar(atrasoAleatorioMs(config.whatsapp_atraso_min_segundos, config.whatsapp_atraso_max_segundos));
   }
+}
+
+async function cicloDeEnvio(sock) {
+  const { data: config, error: erroConfig } = await supabase.from('configuracoes').select('*').eq('id', 1).single();
+  if (erroConfig) throw erroConfig;
+
+  // Um fetch só, usado nos dois passos — enfileirarRegua e mandarPendentes
+  // não precisam ler `clientes` cada um por conta própria.
+  const clientes = await buscarTudo(() => supabase.from('clientes').select('id, nome, telefone').order('id'));
+
+  await enfileirarRegua(config, clientes);
+  await mandarPendentes(sock, config, clientes);
 }
 
 // A conexão pode cair e reconectar sozinha (rede, celular sem internet etc.).

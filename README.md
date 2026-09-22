@@ -26,6 +26,7 @@ Este é um projeto real, desenvolvido sob demanda para um cliente, e vai ser usa
 - **Tela "Hoje"** (a própria página inicial): total vencido, quantos clientes precisam de atenção, quantos atrasados nunca foram cobrados, o atraso mais antigo e o total a vencer em 30 dias; o cliente de maior risco em destaque, com o motivo; e a **fila de cobrança do dia**, do risco mais alto ao mais baixo.
 - **"Já cobrei"**: um clique (com confirmação) tira o cliente da fila por alguns dias (`dias_repetir_cobranca`); passado o prazo ele volta sozinho. Se clicou por engano, dá pra desfazer.
 - **Previsão de caixa** (`/previsao`): quanto deve entrar nas próximas 4 semanas. Compara a **soma dos vencimentos** com a **previsão ajustada pelo risco** de cada cliente, mostra a diferença e um gráfico de barras por período (já vencidos e semanas 1 a 4), com os valores escritos ao lado e uma versão em tabela.
+- **Régua de cobrança por WhatsApp**: mensagem de boas-vindas ao cadastrar um cliente novo, aviso alguns dias antes do vencimento, aviso no dia do vencimento e cobrança automática de atraso — tudo mandado sozinho pelo bot, sem precisar apertar nenhum botão.
 - Mensagens de sucesso/erro, confirmação antes de marcar como pago e proteção contra clique duplo.
 
 ## Como o risco é calculado
@@ -149,6 +150,8 @@ Testes automáticos (motor de risco, busca, tela "Hoje" e previsão de caixa): `
 **Dados fictícios para testar:** `npm run seed:teste` cria 10 clientes de mentira, cada um numa situação diferente do motor de risco (cliente novo, antigo que já quitou tudo, atrasado, com pagamento parcial...). Eles são marcados com o segmento `TESTE` e telefones inválidos (`(00) 00000-00XX`), e `npm run seed:teste:remover` apaga só eles, sem tocar nos clientes reais. Os comandos leem o `.env.local`.
 
 **Régua de WhatsApp (Fase 6):** `npm run whatsapp:bot` inicia o bot (Baileys). Na primeira vez, escaneie o QR code que aparece no terminal (WhatsApp no celular → Aparelhos conectados → Conectar um aparelho); a sessão fica salva em `whatsapp-auth/` (não versionada) e reconecta sozinha depois disso. É um processo que fica rodando — não um comando de um clique só — e não dá pra hospedar na Vercel junto com o resto do app (ver "Decisões técnicas"). Bancos criados antes da Fase 6 precisam rodar também [`supabase/fase6-whatsapp.sql`](supabase/fase6-whatsapp.sql).
+
+A tabela `mensagens` funciona como fila: qualquer parte do app pode gravar uma linha com `status: 'pendente'` (hoje, só o cadastro de cliente novo faz isso, em [`app/clientes/novo/actions.js`](app/clientes/novo/actions.js)) e o bot manda pra frente a cada ciclo — não precisa saber quem gravou. Os outros três tipos (antes do vencimento, vencimento, atraso) são decididos pela própria régua (`lib/regua.js`), a cada ciclo.
 
 **Ligar o bot sozinho ao entrar no Windows** (opcional, configurar uma vez por computador): depois de já ter escaneado o QR code pelo menos uma vez, registre uma tarefa no Agendador de Tarefas do Windows apontando pra [`scripts/iniciar-bot.bat`](scripts/iniciar-bot.bat), disparada por "Ao fazer logon" do seu usuário, com reinício automático se cair. Pelo PowerShell:
 
