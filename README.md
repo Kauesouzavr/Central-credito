@@ -4,7 +4,7 @@
 
 *English summary: a web app to manage store-credit ("pay later") sales — customers, receivables, partial payments, default-risk scoring and, on the roadmap, WhatsApp collection reminders and a cash-flow forecast. Built with Next.js (App Router + Server Actions) and Supabase (PostgreSQL).*
 
-**Status:** 🚧 em desenvolvimento — Fases 1 a 7 concluídas; próxima: Fase 8 (redesign visual).
+**Status:** 🚧 em desenvolvimento — Fases 1 a 8 concluídas; próxima: Fase 9 (testes finais e ajuste dos parâmetros com dados reais).
 
 ---
 
@@ -130,7 +130,7 @@ Além das tabelas, a view `titulos_com_saldo` entrega cada título já com saldo
 | 5 | **Previsão de caixa**: soma dos vencimentos × previsão ajustada pelo risco, em 4 semanas, com gráfico | ✅ |
 | 6 | **Régua de cobrança via WhatsApp** (Baileys): decide quem avisar/cobrar (`lib/regua.js`), monta o texto (`lib/mensagens-whatsapp.js`) e manda pelo bot (`scripts/whatsapp-bot.mjs`), com limite de mensagens e atraso aleatório entre envios | ✅ |
 | 7 | **Relatório semanal** (`/relatorio`): vendido, recebido, clientes novos, títulos que atrasaram e mensagens de WhatsApp mandadas, últimos 7 dias comparados com os 7 anteriores | ✅ |
-| 8 | Redesign visual | ⏳ |
+| 8 | **Redesign visual**: papel-carbono/talão de recibo — paleta, tipografia e selos de status tipo carimbo (ver [`DESIGN.md`](DESIGN.md)) | ✅ |
 | 9 | Testes finais e ajuste dos parâmetros com dados reais | ⏳ |
 
 ## Como rodar localmente
