@@ -4,7 +4,7 @@
 
 *English summary: a web app to manage store-credit ("pay later") sales — customers, receivables, partial payments, default-risk scoring and, on the roadmap, WhatsApp collection reminders and a cash-flow forecast. Built with Next.js (App Router + Server Actions) and Supabase (PostgreSQL).*
 
-**Status:** 🚧 em desenvolvimento — Fases 1 a 6 concluídas; próxima: Fase 7 (relatório semanal).
+**Status:** 🚧 em desenvolvimento — Fases 1 a 7 concluídas; próxima: Fase 8 (redesign visual).
 
 ---
 
@@ -129,7 +129,7 @@ Além das tabelas, a view `titulos_com_saldo` entrega cada título já com saldo
 | 4 | **Tela "Hoje"**: números do dia, cliente de maior risco em destaque e fila de cobrança (com "Já cobrei") | ✅ |
 | 5 | **Previsão de caixa**: soma dos vencimentos × previsão ajustada pelo risco, em 4 semanas, com gráfico | ✅ |
 | 6 | **Régua de cobrança via WhatsApp** (Baileys): decide quem avisar/cobrar (`lib/regua.js`), monta o texto (`lib/mensagens-whatsapp.js`) e manda pelo bot (`scripts/whatsapp-bot.mjs`), com limite de mensagens e atraso aleatório entre envios | ✅ |
-| 7 | Relatório semanal | ⏳ |
+| 7 | **Relatório semanal** (`/relatorio`): vendido, recebido, clientes novos, títulos que atrasaram e mensagens de WhatsApp mandadas, últimos 7 dias comparados com os 7 anteriores | ✅ |
 | 8 | Redesign visual | ⏳ |
 | 9 | Testes finais e ajuste dos parâmetros com dados reais | ⏳ |
 
@@ -172,6 +172,7 @@ app/
   page.js                     Início = tela "Hoje" (busca, números do dia, fila de cobrança)
   actions.js                  Server Actions: "Já cobrei" e desfazer
   previsao/page.js            Previsão de caixa (cartões, gráfico de barras e tabelas)
+  relatorio/page.js           Relatório semanal (cartões com comparação à semana anterior)
   clientes/
     page.js                   Lista de clientes
     novo/                     Cadastro (formulário + Server Action)
@@ -200,6 +201,9 @@ lib/
   mensagens-whatsapp.test.js  Testes dos textos
   limite-envio.js             Limite de mensagens por hora/dia e atraso aleatório (função pura)
   limite-envio.test.js        Testes do limite de envio
+  relatorio.js                Relatório semanal: números da semana vs. a anterior (função pura)
+  relatorio.test.js           Testes do relatório semanal
+  carregar-relatorio.js       Busca os dados no Supabase e monta o relatório
 scripts/
   seed-teste.mjs              Cria/remove os clientes fictícios de teste
   whatsapp-bot.mjs            Bot de WhatsApp (Baileys): conecta e roda a régua em loop
