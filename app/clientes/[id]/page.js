@@ -1,200 +1,77 @@
-import { Fragment } from 'react';
 import Link from 'next/link';
 import { getSupabaseServerClient } from '../../../lib/supabase-server';
-import { FORMAS_PAGAMENTO, formatarData, formatarMoeda, paraCentavos } from '../../../lib/util';
 import { carregarRiscos } from '../../../lib/carregar-risco';
-import BotaoAcao from '../../componentes/BotaoAcao';
-import EtiquetaRisco from '../../componentes/EtiquetaRisco';
-import { marcarTituloComoPago, marcarTudoComoPago, registrarPagamentoParcial } from './actions';
+import { hojeBrasil } from '../../../lib/util';
+import { GlassPanel } from '../../componentes/ui/GlassPanel';
+import { FichaInterativa } from '../../componentes/ficha/FichaInterativa';
 
 export const dynamic = 'force-dynamic';
 
-const STATUS_LABEL = {
-  pago: 'Pago',
-  atrasado: 'Atrasado',
-  em_aberto: 'Em aberto',
-};
-
-export default async function FichaCliente({ params, searchParams }) {
+export default async function FichaCliente({ params }) {
   const { id } = await params;
-  const { ok, erro } = (await searchParams) || {};
   const supabase = getSupabaseServerClient();
 
-  const { data: cliente, error: erroCliente } = await supabase
-    .from('clientes')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data: cliente, error: erroCliente } = await supabase.from('clientes').select('*').eq('id', id).single();
 
   if (erroCliente || !cliente) {
     return (
-      <main className="pagina">
-        <p className="erro">Cliente não encontrado.</p>
-        <Link href="/clientes">← Voltar pra lista</Link>
-      </main>
+      <GlassPanel className="mx-auto max-w-lg p-10 text-center">
+        <p className="text-2xl font-extrabold text-ink">Cliente não encontrado</p>
+        <p className="mt-2 text-ink-soft">Ele pode ter sido removido ou o endereço está errado.</p>
+        <Link href="/clientes" className="mt-6 inline-block font-bold text-brand-700 hover:text-brand-800">
+          Voltar para clientes
+        </Link>
+      </GlassPanel>
     );
   }
 
-  const { data: titulos, error: erroTitulos } = await supabase
+  const { data: titulosBrutos, error: erroTitulos } = await supabase
     .from('titulos_com_saldo')
     .select('*')
     .eq('cliente_id', id)
     .order('data_vencimento', { ascending: true });
 
-  const { riscoDe, erro: erroRisco } = await carregarRiscos(supabase, { clienteId: id });
-  const risco = riscoDe(id);
+  const idsTitulos = (titulosBrutos || []).map((t) => t.id);
+  const { data: pagamentosBrutos } =
+    idsTitulos.length > 0
+      ? await supabase
+          .from('pagamentos')
+          .select('*')
+          .in('titulo_id', idsTitulos)
+          .order('data_pagamento', { ascending: false })
+      : { data: [] };
 
-  const abertos = (titulos || []).filter((t) => t.status !== 'pago');
-  const totalAberto =
-    abertos.reduce((soma, t) => soma + paraCentavos(t.valor_restante), 0) / 100;
+  const pagamentosPorTitulo = new Map();
+  for (const p of pagamentosBrutos || []) {
+    const lista = pagamentosPorTitulo.get(p.titulo_id) || [];
+    lista.push(p);
+    pagamentosPorTitulo.set(p.titulo_id, lista);
+  }
+  const titulos = (titulosBrutos || []).map((t) => ({ ...t, pagamentos: pagamentosPorTitulo.get(t.id) || [] }));
+
+  const { data: mensagens } = await supabase
+    .from('mensagens')
+    .select('*')
+    .eq('cliente_id', id)
+    .order('criado_em', { ascending: false })
+    .limit(20);
+
+  const { riscoDe, erro: erroRisco } = await carregarRiscos(supabase, { clienteId: id });
+  const risco = riscoDe(id) || { nota: 0, nivel: 'baixo', motivos: [] };
 
   return (
-    <main className="pagina">
-      <Link href="/clientes">← Voltar pra lista</Link>
-
-      <h1>{cliente.nome}</h1>
-      <p>
-        Telefone: {cliente.telefone}
-        {cliente.telefone_reserva ? ` (reserva: ${cliente.telefone_reserva})` : ''}
-      </p>
-      {cliente.segmento && <p>Segmento/cidade: {cliente.segmento}</p>}
-
-      {ok && <p className="sucesso">{ok}</p>}
-      {erro && <p className="erro">{erro}</p>}
-
-      {erroRisco && <p className="erro">Não foi possível calcular o risco: {erroRisco}</p>}
-
-      {risco && (
-        <section className="caixa-risco">
-          <p>
-            <EtiquetaRisco risco={risco} /> Nota {Math.floor(risco.nota)} de 100
-          </p>
-          <ul>
-            {risco.motivos.map((motivo) => (
-              <li key={motivo}>{motivo}</li>
-            ))}
-          </ul>
-          <details>
-            <summary>Como a nota foi calculada</summary>
-            <p>
-              Atraso atual: {risco.partes.atraso} de {risco.maximos.atraso} · Perfil do cliente:{' '}
-              {risco.partes.perfil} de {risco.maximos.perfil} · Mudança de padrão:{' '}
-              {risco.partes.mudanca} de {risco.maximos.mudanca} · Vários títulos abertos:{' '}
-              {risco.partes.varios} de {risco.maximos.varios}
-            </p>
-          </details>
-        </section>
+    <div>
+      {erroTitulos && (
+        <p className="mb-6 rounded-2xl bg-brand-50 px-5 py-4 font-semibold text-brand-700 ring-1 ring-brand-200">
+          Erro ao carregar títulos: {erroTitulos.message}
+        </p>
       )}
-
-      <div className="cabecalho">
-        <h2>Títulos</h2>
-        <Link href={`/clientes/${cliente.id}/nova-compra`} className="botao">
-          + Nova compra
-        </Link>
-      </div>
-
-      {erroTitulos && <p className="erro">Erro ao carregar títulos: {erroTitulos.message}</p>}
-
-      {!erroTitulos && titulos.length === 0 && <p>Nenhum título ainda.</p>}
-
-      {!erroTitulos && abertos.length > 0 && (
-        <form action={marcarTudoComoPago} className="marcar-tudo">
-          <input type="hidden" name="cliente_id" value={cliente.id} />
-          <p>
-            Total em aberto: <strong>{formatarMoeda(totalAberto)}</strong>
-          </p>
-          <BotaoAcao
-            className="botao-secundario"
-            confirmar={`Marcar TODOS os títulos em aberto de ${cliente.nome} como pagos (${formatarMoeda(totalAberto)})?`}
-          >
-            Marcar tudo como pago
-          </BotaoAcao>
-        </form>
+      {erroRisco && (
+        <p className="mb-6 rounded-2xl bg-brand-50 px-5 py-4 font-semibold text-brand-700 ring-1 ring-brand-200">
+          Não foi possível calcular o risco: {erroRisco}
+        </p>
       )}
-
-      {!erroTitulos && titulos.length > 0 && (
-        <table className="tabela-titulos">
-          <thead>
-            <tr>
-              <th>Produto</th>
-              <th>Valor</th>
-              <th>Pago</th>
-              <th>Restante</th>
-              <th>Vencimento</th>
-              <th>Forma</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {titulos.map((t) => (
-              <Fragment key={t.id}>
-                <tr>
-                  <td>{t.produto}</td>
-                  <td>{formatarMoeda(t.valor)}</td>
-                  <td>{formatarMoeda(t.valor_pago)}</td>
-                  <td>{formatarMoeda(t.valor_restante)}</td>
-                  <td>{formatarData(t.data_vencimento)}</td>
-                  <td>{t.forma_pagamento}</td>
-                  <td>
-                    <span className={`selo selo-${t.status}`}>{STATUS_LABEL[t.status] || t.status}</span>
-                  </td>
-                </tr>
-
-                {t.status !== 'pago' && (
-                  <tr className="linha-acoes">
-                    <td colSpan={7}>
-                      <div className="acoes-titulo">
-                        <form action={marcarTituloComoPago}>
-                          <input type="hidden" name="cliente_id" value={cliente.id} />
-                          <input type="hidden" name="titulo_id" value={t.id} />
-                          <BotaoAcao
-                            confirmar={`Marcar "${t.produto}" como pago (${formatarMoeda(t.valor_restante)})?`}
-                          >
-                            Marcar como pago
-                          </BotaoAcao>
-                        </form>
-
-                        <details>
-                          <summary>Pagamento parcial</summary>
-                          <form action={registrarPagamentoParcial} className="formulario">
-                            <input type="hidden" name="cliente_id" value={cliente.id} />
-                            <input type="hidden" name="titulo_id" value={t.id} />
-
-                            <label>
-                              Quanto o cliente pagou? (R$)
-                              <input
-                                type="number"
-                                name="valor"
-                                required
-                                min="0.01"
-                                max={t.valor_restante}
-                                step="0.01"
-                              />
-                            </label>
-
-                            <label>
-                              Forma de pagamento
-                              <select name="forma_pagamento" defaultValue={t.forma_pagamento}>
-                                {FORMAS_PAGAMENTO.map((forma) => (
-                                  <option key={forma} value={forma}>
-                                    {forma}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-
-                            <BotaoAcao>Registrar pagamento</BotaoAcao>
-                          </form>
-                        </details>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </main>
+      <FichaInterativa cliente={cliente} risco={risco} titulos={titulos} mensagens={mensagens || []} hoje={hojeBrasil()} />
+    </div>
   );
 }

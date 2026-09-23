@@ -26,7 +26,8 @@ Este é um projeto real, desenvolvido sob demanda para um cliente, e vai ser usa
 - **Tela "Hoje"** (a própria página inicial): total vencido, quantos clientes precisam de atenção, quantos atrasados nunca foram cobrados, o atraso mais antigo e o total a vencer em 30 dias; o cliente de maior risco em destaque, com o motivo; e a **fila de cobrança do dia**, do risco mais alto ao mais baixo.
 - **"Já cobrei"**: um clique (com confirmação) tira o cliente da fila por alguns dias (`dias_repetir_cobranca`); passado o prazo ele volta sozinho. Se clicou por engano, dá pra desfazer.
 - **Previsão de caixa** (`/previsao`): quanto deve entrar nas próximas 4 semanas. Compara a **soma dos vencimentos** com a **previsão ajustada pelo risco** de cada cliente, mostra a diferença e um gráfico de barras por período (já vencidos e semanas 1 a 4), com os valores escritos ao lado e uma versão em tabela.
-- **Régua de cobrança por WhatsApp**: mensagem de boas-vindas ao cadastrar um cliente novo, aviso alguns dias antes do vencimento, aviso no dia do vencimento e cobrança automática de atraso — tudo mandado sozinho pelo bot, sem precisar apertar nenhum botão.
+- **Régua de cobrança por WhatsApp**: mensagem de boas-vindas ao cadastrar um cliente novo, aviso alguns dias antes do vencimento, aviso no dia do vencimento e cobrança automática de atraso — tudo mandado sozinho pelo bot, sem precisar apertar nenhum botão. Tela **Cobrança** (`/cobranca`) mostra a régua de cada compra, o feed de mensagens e dá pra pausar/retomar os envios.
+- **Ajustes** (`/ajustes`): os números que decidem risco e cobrança (limite de atraso, cortes de risco, dias de aviso/repetição, limites de mensagem por hora/dia), com prévia de quantos clientes ficariam em cada faixa de risco antes de salvar.
 - Mensagens de sucesso/erro, confirmação antes de marcar como pago e proteção contra clique duplo.
 
 ## Como o risco é calculado
@@ -116,7 +117,7 @@ Além das tabelas, a view `titulos_com_saldo` entrega cada título já com saldo
 
 - **Next.js** (App Router) com **React 19**, em JavaScript puro
 - **Supabase** (PostgreSQL) via `@supabase/supabase-js`
-- CSS simples, só o necessário para legibilidade (o redesign visual é a Fase 8)
+- Tailwind CSS + framer-motion, lucide-react, sonner, recharts (redesign visual da Fase 8 — ver [`DESIGN.md`](DESIGN.md))
 
 ## Roadmap
 
@@ -130,7 +131,7 @@ Além das tabelas, a view `titulos_com_saldo` entrega cada título já com saldo
 | 5 | **Previsão de caixa**: soma dos vencimentos × previsão ajustada pelo risco, em 4 semanas, com gráfico | ✅ |
 | 6 | **Régua de cobrança via WhatsApp** (Baileys): decide quem avisar/cobrar (`lib/regua.js`), monta o texto (`lib/mensagens-whatsapp.js`) e manda pelo bot (`scripts/whatsapp-bot.mjs`), com limite de mensagens e atraso aleatório entre envios | ✅ |
 | 7 | **Relatório semanal** (`/relatorio`): vendido, recebido, clientes novos, títulos que atrasaram e mensagens de WhatsApp mandadas, últimos 7 dias comparados com os 7 anteriores | ✅ |
-| 8 | **Redesign visual**: papel-carbono/talão de recibo — paleta, tipografia e selos de status tipo carimbo (ver [`DESIGN.md`](DESIGN.md)) | ✅ |
+| 8 | **Redesign visual**: painel vermelho/marca, cartões "glass", Manrope, animações — port de um protótipo do MagicPatterns, incluindo as telas novas **Cobrança** (`/cobranca`, pausar/retomar a régua) e **Ajustes** (`/ajustes`, números de risco e cobrança com prévia ao vivo) (ver [`DESIGN.md`](DESIGN.md)) | ✅ |
 | 9 | Testes finais e ajuste dos parâmetros com dados reais | ⏳ |
 
 ## Como rodar localmente
@@ -169,41 +170,43 @@ Troque `CAMINHO\ATE\O\PROJETO` pelo caminho real nesse computador. **Nunca rode 
 
 ```
 app/
-  page.js                     Início = tela "Hoje" (busca, números do dia, fila de cobrança)
+  page.js                     Início = tela "Hoje" (números do dia, fila de cobrança)
   actions.js                  Server Actions: "Já cobrei" e desfazer
-  previsao/page.js            Previsão de caixa (cartões, gráfico de barras e tabelas)
-  relatorio/page.js           Relatório semanal (cartões com comparação à semana anterior)
+  layout.js                   Layout raiz: TopNav, Toaster, comentário de decisão de design
+  globals.css                 Tailwind + classes custom do design (glass, botões, brilho)
+  previsao/page.js            Previsão de caixa (cartões, gráfico recharts e tabela)
+  relatorio/page.js           Relatório semanal narrativo (copiar/exportar)
+  cobranca/                   Régua de cada compra, feed de mensagens, pausar/retomar
+  ajustes/                    Números de risco/cobrança, com prévia ao vivo
+  api/exportar-csv/route.js   Exporta clientes + títulos em CSV
   clientes/
-    page.js                   Lista de clientes
-    novo/                     Cadastro (formulário + Server Action)
+    page.js                   Lista de clientes (busca/filtro no cliente) + modal "Novo cliente"
+    novo/actions.js           Server Action de cadastro (chamada pelo modal)
     [id]/
-      page.js                 Ficha do cliente e ações nos títulos
-      actions.js              Server Actions: pagamento parcial, marcar como pago
-      nova-compra/            Nova compra para cliente existente
-  componentes/BotaoAcao.js    Botão com confirmação e trava contra clique duplo
-  componentes/EtiquetaRisco.js  Etiqueta de risco (cor + texto)
+      page.js                 Ficha do cliente
+      actions.js              Server Actions: pagamento, marcar como pago, editar dados
+      nova-compra/actions.js  Server Action de nova compra (chamada pelo modal na ficha)
+  componentes/
+    TopNav.jsx                 Menu fixo com indicador de aba ativa animado
+    BotaoAcao.js                Botão com confirmação e trava contra clique duplo
+    ui/                         Button, GlassPanel, Modal, TextField, NumberStepper, RiskRing/Badge, Avatar, Toaster...
+    hoje/, clientes/, ficha/, previsao/, regua/, ajustes/, relatorio/, forms/
+                                 Componentes de cada tela, portados do design de referência
 lib/
   supabase-server.js          Cliente Supabase (somente servidor)
   util.js                     Moeda, datas, centavos, "hoje" no fuso de Brasília
-  risco.js                    Motor de risco (função pura)
-  risco.test.js               Testes do motor de risco
-  util.test.js                Testes da busca por nome e das funções de data
-  carregar-risco.js           Busca os dados no Supabase e calcula o risco dos clientes
-  hoje.js                     Tela "Hoje": contagens, fila e destaque (função pura)
-  hoje.test.js                Testes da tela "Hoje"
-  carregar-hoje.js            Busca os dados no Supabase e monta o resumo de hoje
-  previsao.js                 Previsão de caixa: períodos, chance de pagar, diferença (função pura)
-  previsao.test.js            Testes da previsão de caixa
-  carregar-previsao.js        Busca os dados no Supabase e monta a previsão
-  regua.js                    Decide quem recebe aviso/cobrança hoje (função pura)
-  regua.test.js               Testes da régua
-  mensagens-whatsapp.js       Monta o texto de cada mensagem (função pura)
-  mensagens-whatsapp.test.js  Testes dos textos
-  limite-envio.js             Limite de mensagens por hora/dia e atraso aleatório (função pura)
-  limite-envio.test.js        Testes do limite de envio
-  relatorio.js                Relatório semanal: números da semana vs. a anterior (função pura)
-  relatorio.test.js           Testes do relatório semanal
-  carregar-relatorio.js       Busca os dados no Supabase e monta o relatório
+  risco.js / risco.test.js    Motor de risco (função pura) + testes
+  hoje.js / hoje.test.js      Tela "Hoje": contagens, fila e destaque (função pura) + testes
+  previsao.js / previsao.test.js  Previsão de caixa (função pura) + testes
+  regua.js / regua.test.js    Decide quem recebe aviso/cobrança hoje (função pura) + testes
+  mensagens-whatsapp.js / .test.js  Monta o texto de cada mensagem + testes
+  limite-envio.js / .test.js  Limite de mensagens por hora/dia e atraso aleatório + testes
+  relatorio.js / .test.js     Números da semana vs. a anterior (função pura) + testes
+  carregar-*.js                Cada um busca no Supabase e monta o resumo da tela correspondente
+  relatorio-texto.js           Narrativa do relatório semanal, a partir do que carregar-relatorio.js/hoje.js/previsao.js já calculam
+  csv.js                       Monta o CSV de clientes + títulos (usado pelo Route Handler)
+  risco-ui.js / titulo-ui.js / mensagem-ui.js  Cores e rótulos em português por nível de risco/status — um lugar só
+  buttonStyles.js               Classes Tailwind dos botões (primary/secondary/ghost)
 scripts/
   seed-teste.mjs              Cria/remove os clientes fictícios de teste
   whatsapp-bot.mjs            Bot de WhatsApp (Baileys): conecta e roda a régua em loop
@@ -211,6 +214,7 @@ supabase/
   schema.sql                  Schema completo (tabelas, view, RLS)
   correcao-fuso.sql           Correção de fuso para bancos já existentes
   fase6-whatsapp.sql          Colunas de configuração da régua, para bancos já existentes
+  adicionar-pausa-whatsapp.sql  Coluna do botão "Pausar envios", para bancos já existentes
 ```
 
 ## Screenshots

@@ -11,6 +11,35 @@ import {
   paraCentavos,
 } from '../../../lib/util';
 
+export async function atualizarCliente(formData) {
+  const clienteId = lerCampo(formData, 'cliente_id');
+  const nome = lerCampo(formData, 'nome');
+  const telefone = lerCampo(formData, 'telefone');
+  const telefoneReserva = lerCampo(formData, 'telefone_reserva');
+  const segmento = lerCampo(formData, 'segmento');
+
+  if (!nome || !telefone) {
+    voltarParaFicha(clienteId, 'erro', 'Nome e telefone são obrigatórios.');
+  }
+
+  const supabase = getSupabaseServerClient();
+  const { error } = await supabase
+    .from('clientes')
+    .update({
+      nome,
+      telefone,
+      telefone_reserva: telefoneReserva || null,
+      segmento: segmento || null,
+    })
+    .eq('id', clienteId);
+
+  if (error) {
+    voltarParaFicha(clienteId, 'erro', 'Erro ao salvar dados: ' + error.message);
+  }
+
+  voltarParaFicha(clienteId, 'ok', 'Dados atualizados.');
+}
+
 // Volta pra ficha do cliente, opcionalmente com uma mensagem de sucesso (ok)
 // ou de erro (erro) no topo.
 function voltarParaFicha(clienteId, tipo, mensagem) {
@@ -80,6 +109,7 @@ export async function registrarPagamentoParcial(formData) {
 export async function marcarTituloComoPago(formData) {
   const clienteId = lerCampo(formData, 'cliente_id');
   const tituloId = lerCampo(formData, 'titulo_id');
+  const formaEscolhida = lerCampo(formData, 'forma_pagamento');
 
   const supabase = getSupabaseServerClient();
 
@@ -101,7 +131,7 @@ export async function marcarTituloComoPago(formData) {
   const { error } = await supabase.from('pagamentos').insert({
     titulo_id: tituloId,
     valor: titulo.valor_restante,
-    forma_pagamento: titulo.forma_pagamento,
+    forma_pagamento: FORMAS_PAGAMENTO.includes(formaEscolhida) ? formaEscolhida : titulo.forma_pagamento,
     data_pagamento: hojeBrasil(),
   });
 
@@ -114,6 +144,7 @@ export async function marcarTituloComoPago(formData) {
 
 export async function marcarTudoComoPago(formData) {
   const clienteId = lerCampo(formData, 'cliente_id');
+  const formaEscolhida = lerCampo(formData, 'forma_pagamento');
 
   const supabase = getSupabaseServerClient();
 
@@ -139,7 +170,7 @@ export async function marcarTudoComoPago(formData) {
     abertos.map((t) => ({
       titulo_id: t.id,
       valor: t.valor_restante,
-      forma_pagamento: t.forma_pagamento,
+      forma_pagamento: FORMAS_PAGAMENTO.includes(formaEscolhida) ? formaEscolhida : t.forma_pagamento,
       data_pagamento: dataPagamento,
     }))
   );

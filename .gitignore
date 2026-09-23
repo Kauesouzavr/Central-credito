@@ -14,3 +14,7 @@ node_modules/
 # Web nesse número. Nunca versionar — quem tiver essa pasta manda mensagem
 # como se fosse o número conectado.
 whatsapp-auth/
+
+# Projeto de referência do design (Fase 8, exportado do MagicPatterns) — só
+# material de consulta, não faz parte do app (stack e dependências diferentes).
+300309a1-dbb5-4141-9f56-7613d29103af/

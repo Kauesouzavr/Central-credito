@@ -29,7 +29,7 @@ export async function criarCliente(formData) {
   if (!FORMAS_PAGAMENTO.includes(formaPagamento)) erros.push('Forma de pagamento inválida');
 
   if (erros.length > 0) {
-    redirect(`/clientes/novo?erro=${encodeURIComponent(erros.join('; '))}`);
+    redirect(`/clientes?novo=1&erro=${encodeURIComponent(erros.join('; '))}`);
     return;
   }
 
@@ -48,7 +48,7 @@ export async function criarCliente(formData) {
 
   if (erroCliente) {
     redirect(
-      `/clientes/novo?erro=${encodeURIComponent('Erro ao salvar cliente: ' + erroCliente.message)}`
+      `/clientes?novo=1&erro=${encodeURIComponent('Erro ao salvar cliente: ' + erroCliente.message)}`
     );
     return;
   }
@@ -68,7 +68,7 @@ export async function criarCliente(formData) {
 
   if (erroTitulo) {
     redirect(
-      `/clientes/novo?erro=${encodeURIComponent(
+      `/clientes/${cliente.id}?erro=${encodeURIComponent(
         'Cliente salvo, mas houve erro ao salvar a compra: ' + erroTitulo.message
       )}`
     );
@@ -90,5 +90,5 @@ export async function criarCliente(formData) {
     }
   }
 
-  redirect('/clientes');
+  redirect(`/clientes/${cliente.id}?ok=${encodeURIComponent('Cliente cadastrado. A mensagem de boas-vindas foi enviada no WhatsApp.')}`);
 }
