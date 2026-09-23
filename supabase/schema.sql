@@ -79,6 +79,9 @@ create table if not exists configuracoes (
   whatsapp_limite_por_dia integer default 100,
   whatsapp_atraso_min_segundos integer not null default 20,
   whatsapp_atraso_max_segundos integer not null default 90,
+  -- Fase 8 (redesign, tela de Cobrança): botão "Pausar envios" — o bot
+  -- (scripts/whatsapp-bot.mjs) confere isso antes de mandar cada leva.
+  whatsapp_pausado boolean not null default false,
   constraint configuracoes_linha_unica check (id = 1)
 );
 

@@ -26,7 +26,7 @@ export async function adicionarCompra(formData) {
   const base = `/clientes/${encodeURIComponent(clienteId)}`;
 
   if (erros.length > 0) {
-    redirect(`${base}/nova-compra?erro=${encodeURIComponent(erros.join('; '))}`);
+    redirect(`${base}?compra=1&erro=${encodeURIComponent(erros.join('; '))}`);
   }
 
   const supabase = getSupabaseServerClient();
@@ -41,9 +41,7 @@ export async function adicionarCompra(formData) {
   });
 
   if (error) {
-    redirect(
-      `${base}/nova-compra?erro=${encodeURIComponent('Erro ao salvar a compra: ' + error.message)}`
-    );
+    redirect(`${base}?compra=1&erro=${encodeURIComponent('Erro ao salvar a compra: ' + error.message)}`);
   }
 
   redirect(`${base}?ok=${encodeURIComponent(`Compra de ${formatarMoeda(valor)} adicionada.`)}`);

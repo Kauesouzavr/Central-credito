@@ -221,6 +221,14 @@ async function cicloDeEnvio(sock) {
   const clientes = await buscarTudo(() => supabase.from('clientes').select('id, nome, telefone').order('id'));
 
   await enfileirarRegua(config, clientes);
+
+  // Pausado pela tela de Cobrança (Fase 8): continua enfileirando (não toca
+  // no WhatsApp), só não manda nada até a pessoa retomar.
+  if (config.whatsapp_pausado) {
+    console.log(`[${new Date().toLocaleTimeString('pt-BR')}] Envios pausados — nada foi mandado neste ciclo.`);
+    return;
+  }
+
   await mandarPendentes(sock, config, clientes);
 }
 

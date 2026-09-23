@@ -1,195 +1,124 @@
 import Link from 'next/link';
 import { getSupabaseServerClient } from '../lib/supabase-server';
 import { carregarHoje } from '../lib/carregar-hoje';
-import { diasEntre, formatarData, formatarMoeda, hojeBrasil, plural } from '../lib/util';
+import { formatarDiaSemana, formatarMoeda, formatarMoedaCurta, hojeBrasil, plural } from '../lib/util';
+import { PageHeader } from './componentes/ui/PageHeader';
+import { GlassPanel } from './componentes/ui/GlassPanel';
+import { RiskBadge } from './componentes/ui/RiskBadge';
+import { QuietMetric } from './componentes/hoje/QuietMetric';
+import { RiskThermometer } from './componentes/hoje/RiskThermometer';
+import { MaiorRiscoCard } from './componentes/hoje/MaiorRiscoCard';
+import { FilaCobranca } from './componentes/hoje/FilaCobranca';
+import { classesBotao } from '../lib/buttonStyles';
 import BotaoAcao from './componentes/BotaoAcao';
-import EtiquetaRisco from './componentes/EtiquetaRisco';
-import { desfazerCobranca, registrarCobranca } from './actions';
+import { desfazerCobranca } from './actions';
 
 export const dynamic = 'force-dynamic';
 
-function quandoCobrado(data, hoje) {
-  const dias = diasEntre(data, hoje);
-  if (dias <= 0) return 'hoje';
-  if (dias === 1) return 'ontem';
-  return `há ${dias} dias`;
-}
-
-function textoAtraso(dias) {
-  return `atrasado há ${dias} ${plural(dias, 'dia', 'dias')}`;
-}
-
-export default async function Home({ searchParams }) {
-  const { ok, erro } = (await searchParams) || {};
-
+export default async function Home() {
   const hoje = hojeBrasil();
   const supabase = getSupabaseServerClient();
   const { resumo, erro: erroHoje } = await carregarHoje(supabase);
 
-  const semPendencias = resumo && resumo.fila.length === 0 && resumo.vencemHoje.length === 0;
-
   return (
-    <main className="pagina">
-      <div className="cabecalho">
-        <h1>Hoje, {formatarData(hoje)}</h1>
-        <Link href="/clientes/novo" className="botao">
-          + Novo cliente
-        </Link>
-      </div>
+    <div>
+      <PageHeader eyebrow={formatarDiaSemana(hoje)} title="Hoje" />
 
-      <form action="/clientes" method="get" className="busca">
-        <label>
-          Buscar cliente pelo nome
-          <input
-            type="search"
-            name="busca"
-            placeholder="ex: Maria"
-            autoComplete="off"
-            autoFocus
-          />
-        </label>
-        <button type="submit">Buscar</button>
-      </form>
-
-      {ok && <p className="sucesso">{ok}</p>}
-      {erro && <p className="erro">{erro}</p>}
-      {erroHoje && <p className="erro">Não foi possível carregar o resumo de hoje: {erroHoje}</p>}
+      {erroHoje && (
+        <p className="mb-6 rounded-2xl bg-brand-50 px-5 py-4 font-semibold text-brand-700 ring-1 ring-brand-200">
+          Não foi possível carregar o resumo de hoje: {erroHoje}
+        </p>
+      )}
 
       {resumo && (
         <>
-          <div className="cartoes">
-            <div className="cartao">
-              <p className="cartao-numero">{formatarMoeda(resumo.totalVencido)}</p>
-              <p className="cartao-rotulo">Total vencido em aberto</p>
-            </div>
-            <div className="cartao">
-              <p className="cartao-numero">{resumo.clientesAtencao}</p>
-              <p className="cartao-rotulo">
-                {plural(resumo.clientesAtencao, 'cliente precisa', 'clientes precisam')} de atenção hoje
-              </p>
-            </div>
-            <div className="cartao">
-              <p className="cartao-numero">{resumo.nuncaCobrados}</p>
-              <p className="cartao-rotulo">
-                {plural(resumo.nuncaCobrados, 'atrasado nunca foi cobrado', 'atrasados nunca foram cobrados')}
-              </p>
-            </div>
-            <div className="cartao">
-              <p className="cartao-numero">
-                {resumo.atrasoMaisAntigo > 0
-                  ? `${resumo.atrasoMaisAntigo} ${plural(resumo.atrasoMaisAntigo, 'dia', 'dias')}`
-                  : '—'}
-              </p>
-              <p className="cartao-rotulo">Atraso mais antigo</p>
-            </div>
-            <div className="cartao">
-              <p className="cartao-numero">{formatarMoeda(resumo.aVencer30Dias)}</p>
-              <p className="cartao-rotulo">A vencer nos próximos 30 dias</p>
-            </div>
-          </div>
+          <section
+            aria-label="Resumo do dia"
+            className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)_minmax(0,1fr)] lg:gap-14"
+          >
+            <dl className="order-2 grid grid-cols-2 gap-x-6 lg:order-1 lg:block lg:divide-y lg:divide-line lg:text-right">
+              <QuietMetric label="Precisam de atenção hoje" value={`${resumo.clientesAtencao} clientes`} />
+              <QuietMetric
+                label="Nunca foram cobrados"
+                value={resumo.nuncaCobrados}
+                hint="têm saldo e nenhuma cobrança"
+              />
+              <QuietMetric
+                label="Atraso mais antigo"
+                value={resumo.atrasoMaisAntigo > 0 ? `${resumo.atrasoMaisAntigo} dias` : '—'}
+                hint={resumo.atrasoMaisAntigoCliente}
+              />
+              <QuietMetric label="A vencer em 30 dias" value={formatarMoedaCurta(resumo.aVencer30Dias)} />
+            </dl>
 
-          {resumo.maiorRisco && (
-            <section className="caixa-risco">
-              <h3>Maior risco agora</h3>
-              <p>
-                <Link href={`/clientes/${resumo.maiorRisco.cliente.id}`}>
-                  <strong>{resumo.maiorRisco.cliente.nome}</strong>
-                </Link>{' '}
-                <EtiquetaRisco risco={resumo.maiorRisco.risco} /> Nota{' '}
-                {Math.floor(resumo.maiorRisco.risco.nota)} de 100
-              </p>
-              <ul>
-                {resumo.maiorRisco.risco.motivos.map((motivo) => (
-                  <li key={motivo}>{motivo}</li>
-                ))}
-              </ul>
-              <p>
-                Em aberto: <strong>{formatarMoeda(resumo.maiorRisco.emAberto)}</strong>
-              </p>
-            </section>
-          )}
+            <div className="order-1 lg:order-2">
+              <RiskThermometer vencido={resumo.totalVencido} totalAberto={resumo.totalAberto} />
+            </div>
 
-          {semPendencias && (
-            <p className="sucesso">
-              {resumo.cobradosRecentemente.length > 0
-                ? 'Todos os atrasados já foram cobrados e nada vence hoje.'
-                : 'Nada atrasado e nada vencendo hoje.'}
-            </p>
-          )}
+            <div className="order-3">
+              {resumo.maiorRisco ? (
+                <MaiorRiscoCard destaque={resumo.maiorRisco} />
+              ) : (
+                <GlassPanel className="p-7">
+                  <p className="text-lg font-bold text-ink">Nenhum cliente em risco</p>
+                  <p className="mt-1 text-ink-soft">Todos estão em dia com os pagamentos.</p>
+                </GlassPanel>
+              )}
+            </div>
+          </section>
 
-          {resumo.fila.length > 0 && (
-            <>
-              <h3>Fila de cobrança de hoje ({resumo.fila.length})</h3>
-              <ul className="lista-clientes fila">
-                {resumo.fila.map((linha) => (
-                  <li key={linha.cliente.id}>
-                    <Link href={`/clientes/${linha.cliente.id}`}>
-                      <strong>{linha.cliente.nome}</strong> — {linha.cliente.telefone}
-                      <span className="linha-risco">
-                        <EtiquetaRisco risco={linha.risco} />
-                        {formatarMoeda(linha.totalAtrasado)} · {textoAtraso(linha.maiorAtraso)}
-                        {linha.titulosAtrasados > 1 ? ` · ${linha.titulosAtrasados} títulos` : ''}
-                        {linha.ultimaCobranca
-                          ? ` · última cobrança ${quandoCobrado(linha.ultimaCobranca, hoje)}`
-                          : ' · nunca cobrado'}
-                      </span>
-                    </Link>
-                    <form action={registrarCobranca}>
-                      <input type="hidden" name="cliente_id" value={linha.cliente.id} />
-                      <BotaoAcao
-                        className="botao-secundario"
-                        confirmar={`Registrar que você já cobrou ${linha.cliente.nome}? Esse cliente sai da fila por ${resumo.diasRepetirCobranca} ${plural(resumo.diasRepetirCobranca, 'dia', 'dias')}.`}
-                      >
-                        Já cobrei
-                      </BotaoAcao>
-                    </form>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+          <FilaCobranca itens={resumo.fila} diasRepetirCobranca={resumo.diasRepetirCobranca} className="mt-14" />
 
           {resumo.vencemHoje.length > 0 && (
-            <>
-              <h3>Vencem hoje ({resumo.vencemHoje.length})</h3>
-              <ul className="lista-clientes">
+            <GlassPanel as="section" aria-label="Vencem hoje" className="mt-8 p-3 sm:p-4">
+              <h2 className="px-3 pb-3 pt-3 text-xl font-extrabold tracking-tight text-ink sm:px-4">
+                Vencem hoje
+                <span className="ml-3 text-lg font-bold tabular-nums text-ink-faint">{resumo.vencemHoje.length}</span>
+              </h2>
+              <ul className="divide-y divide-line/80">
                 {resumo.vencemHoje.map((linha) => (
                   <li key={linha.cliente.id}>
-                    <Link href={`/clientes/${linha.cliente.id}`}>
-                      <strong>{linha.cliente.nome}</strong> — {linha.cliente.telefone}
-                      <span className="linha-risco">
-                        <EtiquetaRisco risco={linha.risco} />
-                        {formatarMoeda(linha.total)} vence hoje
-                        {linha.titulos > 1 ? ` (${linha.titulos} títulos)` : ''}
+                    <Link
+                      href={`/clientes/${linha.cliente.id}`}
+                      className="flex items-center justify-between gap-4 rounded-2xl px-3 py-4 transition-colors duration-150 hover:bg-white/80 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-200 sm:px-4"
+                    >
+                      <span className="min-w-0 flex-1 truncate text-lg font-bold text-ink">{linha.cliente.nome}</span>
+                      <RiskBadge nivel={linha.risco.nivel} nota={linha.risco.nota} className="hidden sm:inline-flex" />
+                      <span className="text-lg font-extrabold tabular-nums text-ink">
+                        {formatarMoeda(linha.total)}
+                        {linha.titulos > 1 ? ` · ${linha.titulos} títulos` : ''}
                       </span>
                     </Link>
                   </li>
                 ))}
               </ul>
-            </>
+            </GlassPanel>
           )}
 
           {resumo.cobradosRecentemente.length > 0 && (
-            <details className="cobrados">
-              <summary>
-                Já cobrados nos últimos {resumo.diasRepetirCobranca}{' '}
-                {plural(resumo.diasRepetirCobranca, 'dia', 'dias')} ({resumo.cobradosRecentemente.length})
+            <details className="mt-8">
+              <summary className="cursor-pointer text-base font-bold text-brand-700">
+                Já cobrados nos últimos {resumo.diasRepetirCobranca} {plural(resumo.diasRepetirCobranca, 'dia', 'dias')} (
+                {resumo.cobradosRecentemente.length})
               </summary>
-              <ul className="lista-clientes fila">
+              <GlassPanel as="ul" className="mt-3 divide-y divide-line/80 p-3 sm:p-4">
                 {resumo.cobradosRecentemente.map((linha) => (
-                  <li key={linha.cliente.id}>
-                    <Link href={`/clientes/${linha.cliente.id}`}>
-                      <strong>{linha.cliente.nome}</strong> — cobrado{' '}
-                      {quandoCobrado(linha.cobranca.data, hoje)}
-                      <span className="linha-risco">
-                        {formatarMoeda(linha.totalAtrasado)} · {textoAtraso(linha.maiorAtraso)}
+                  <li key={linha.cliente.id} className="flex flex-wrap items-center justify-between gap-3 px-3 py-4 sm:px-4">
+                    <Link
+                      href={`/clientes/${linha.cliente.id}`}
+                      className="min-w-0 flex-1 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-200"
+                    >
+                      <span className="block truncate text-lg font-bold text-ink">{linha.cliente.nome}</span>
+                      <span className="text-base text-ink-soft">
+                        {formatarMoeda(linha.totalAtrasado)} · atrasado há {linha.maiorAtraso}{' '}
+                        {plural(linha.maiorAtraso, 'dia', 'dias')}
                       </span>
                     </Link>
                     {linha.cobranca.podeDesfazer && (
                       <form action={desfazerCobranca}>
                         <input type="hidden" name="cobranca_id" value={linha.cobranca.id} />
                         <BotaoAcao
-                          className="botao-secundario"
+                          className={classesBotao('ghost', 'sm')}
                           confirmar={`Desfazer a cobrança de ${linha.cliente.nome}? O cliente volta para a fila.`}
                         >
                           Desfazer
@@ -198,11 +127,11 @@ export default async function Home({ searchParams }) {
                     )}
                   </li>
                 ))}
-              </ul>
+              </GlassPanel>
             </details>
           )}
         </>
       )}
-    </main>
+    </div>
   );
 }
