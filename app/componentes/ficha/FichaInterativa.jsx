@@ -31,6 +31,13 @@ export function FichaInterativa({ cliente, risco, titulos, mensagens, hoje }) {
   const totalAberto = abertos.reduce((s, t) => s + Number(t.valor_restante), 0);
   const temVencido = abertos.some((t) => t.status === 'atrasado');
   const primeiroNome = cliente.nome.trim().split(' ')[0];
+  const enderecoCompleto = [
+    cliente.endereco && cliente.numero ? `${cliente.endereco}, ${cliente.numero}` : cliente.endereco,
+    cliente.bairro,
+    cliente.cidade,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <div>
@@ -52,7 +59,7 @@ export function FichaInterativa({ cliente, risco, titulos, mensagens, hoje }) {
           <Avatar nome={cliente.nome} nivel={risco.nivel} size="lg" />
           <div className="min-w-0">
             <h1 className="text-4xl font-extrabold tracking-tight text-ink">{cliente.nome}</h1>
-            {cliente.segmento && <p className="mt-1 text-lg text-ink-soft">{cliente.segmento}</p>}
+            {enderecoCompleto && <p className="mt-1 text-lg text-ink-soft">{enderecoCompleto}</p>}
             <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-base text-ink">
               <a
                 href={`tel:${cliente.telefone.replace(/\D/g, '')}`}

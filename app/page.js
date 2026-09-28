@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getSupabaseServerClient } from '../lib/supabase-server';
 import { carregarHoje } from '../lib/carregar-hoje';
+import { carregarEnvioAutomatico } from '../lib/carregar-envio-automatico';
 import { formatarDiaSemana, formatarMoeda, formatarMoedaCurta, hojeBrasil, plural } from '../lib/util';
 import { PageHeader } from './componentes/ui/PageHeader';
 import { GlassPanel } from './componentes/ui/GlassPanel';
@@ -8,6 +9,7 @@ import { RiskBadge } from './componentes/ui/RiskBadge';
 import { QuietMetric } from './componentes/hoje/QuietMetric';
 import { RiskThermometer } from './componentes/hoje/RiskThermometer';
 import { MaiorRiscoCard } from './componentes/hoje/MaiorRiscoCard';
+import { EnvioAutomaticoCard } from './componentes/hoje/EnvioAutomaticoCard';
 import { FilaCobranca } from './componentes/hoje/FilaCobranca';
 import { classesBotao } from '../lib/buttonStyles';
 import BotaoAcao from './componentes/BotaoAcao';
@@ -18,7 +20,10 @@ export const dynamic = 'force-dynamic';
 export default async function Home() {
   const hoje = hojeBrasil();
   const supabase = getSupabaseServerClient();
-  const { resumo, erro: erroHoje } = await carregarHoje(supabase);
+  const [{ resumo, erro: erroHoje }, envioAutomatico] = await Promise.all([
+    carregarHoje(supabase),
+    carregarEnvioAutomatico(supabase),
+  ]);
 
   return (
     <div>
@@ -66,6 +71,12 @@ export default async function Home() {
               )}
             </div>
           </section>
+
+          {!envioAutomatico.erro && (
+            <div className="mt-8">
+              <EnvioAutomaticoCard envio={envioAutomatico} />
+            </div>
+          )}
 
           <FilaCobranca itens={resumo.fila} diasRepetirCobranca={resumo.diasRepetirCobranca} className="mt-14" />
 

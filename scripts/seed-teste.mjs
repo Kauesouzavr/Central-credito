@@ -4,7 +4,7 @@
 //   npm run seed:teste           apaga os clientes de teste antigos e cria 10 novos
 //   npm run seed:teste:remover   só apaga os clientes de teste
 //
-// Todo cliente de teste tem segmento "TESTE" e telefone "(00) 00000-00XX" —
+// Todo cliente de teste tem cidade "TESTE" e telefone "(00) 00000-00XX" —
 // número inválido de propósito, pra nenhuma mensagem de WhatsApp (Fase 6)
 // chegar a uma pessoa de verdade. Só esses clientes são apagados; títulos e
 // pagamentos deles saem junto (on delete cascade). Clientes reais não são tocados.
@@ -142,7 +142,7 @@ async function removerTeste() {
   const { data, error } = await supabase
     .from('clientes')
     .delete()
-    .eq('segmento', 'TESTE')
+    .eq('cidade', 'TESTE')
     .like('telefone', '(00)%')
     .select('id');
   if (error) throw error;
@@ -160,7 +160,7 @@ async function criarTeste() {
       id: clienteId,
       nome: c.nome,
       telefone: `(00) 00000-${String(i + 1).padStart(4, '0')}`,
-      segmento: 'TESTE',
+      cidade: 'TESTE',
     });
 
     for (const t of c.titulos) {

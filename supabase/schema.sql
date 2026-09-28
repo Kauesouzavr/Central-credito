@@ -9,7 +9,11 @@ create table if not exists clientes (
   nome text not null,
   telefone text not null,
   telefone_reserva text,
-  segmento text,
+  cep text,
+  bairro text,
+  cidade text,
+  endereco text,
+  numero text,
   criado_em timestamptz not null default now()
 );
 
@@ -53,7 +57,7 @@ create table if not exists mensagens (
     tipo in ('cadastro','nova_compra','antes_vencimento','vencimento','atraso','pagamento_parcial')
   ),
   texto text not null,
-  status text not null default 'pendente' check (status in ('pendente','enviada','erro')),
+  status text not null default 'pendente' check (status in ('pendente','pendente_revisao','enviada','erro')),
   enviado_em timestamptz,
   criado_em timestamptz not null default now()
 );
@@ -82,6 +86,11 @@ create table if not exists configuracoes (
   -- Fase 8 (redesign, tela de Cobrança): botão "Pausar envios" — o bot
   -- (scripts/whatsapp-bot.mjs) confere isso antes de mandar cada leva.
   whatsapp_pausado boolean not null default false,
+  -- Fase 9: envio 100% automático dos gatilhos da régua. Desligado, as
+  -- mensagens da régua (antes_vencimento/vencimento/atraso) ficam
+  -- 'pendente_revisao' até alguém aprovar em /cobranca, em vez de saírem
+  -- sozinhas. A mensagem de boas-vindas do cadastro não é afetada.
+  whatsapp_envio_automatico boolean not null default true,
   constraint configuracoes_linha_unica check (id = 1)
 );
 

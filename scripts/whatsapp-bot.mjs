@@ -4,13 +4,15 @@
 // WhatsApp por QR code, mantém a sessão salva em ./whatsapp-auth (não
 // versionada — está no .gitignore, é a "senha" da sessão) e, a cada
 // INTERVALO_CICLO_MS, faz duas coisas:
-//   1. Enfileira (grava em `mensagens`, status 'pendente') o que a régua
-//      (lib/regua.js) decidir que é de hoje: aviso antes do vencimento,
-//      vencimento e cobrança de atraso.
+//   1. Enfileira (grava em `mensagens`) o que a régua (lib/regua.js) decidir
+//      que é de hoje: aviso antes do vencimento, vencimento e cobrança de
+//      atraso. Status 'pendente' (sai no passo 2, sem revisão) ou, se
+//      `configuracoes.whatsapp_envio_automatico` estiver desligado,
+//      'pendente_revisao' (só sai depois de alguém aprovar em /cobranca).
 //   2. Manda tudo que estiver 'pendente' — o que acabou de enfileirar, e
 //      também o que outra parte do app já deixou pronto (ex.: a mensagem de
 //      'cadastro', gravada por app/clientes/novo/actions.js na hora que um
-//      cliente novo é criado).
+//      cliente novo é criado, ou uma mensagem que acabou de ser aprovada).
 // Respeita limite de mensagens por hora/dia e um atraso aleatório entre um
 // envio e o outro (lib/limite-envio.js).
 //
@@ -85,12 +87,16 @@ async function enfileirarRegua(config, clientes) {
         .select('id, cliente_id, data_vencimento, status, dias_atraso, valor_restante')
         .order('id')
     ),
+    // 'pendente_revisao' entra aqui também (não só 'enviada'/'pendente'): uma
+    // mensagem esperando aprovação (Fase 9) já conta como "enfileirada" —
+    // sem isso, a régua recriaria ela a cada ciclo enquanto espera alguém
+    // aprovar em /cobranca.
     buscarTudo(() =>
       supabase
         .from('mensagens')
-        .select('id, cliente_id, titulo_id, tipo, enviado_em')
-        .in('status', ['enviada', 'pendente'])
-        .order('id')
+        .select('id, cliente_id, titulo_id, tipo, texto, criado_em, enviado_em')
+        .in('status', ['enviada', 'pendente', 'pendente_revisao'])
+        .order('criado_em')
     ),
   ]);
 
@@ -102,6 +108,15 @@ async function enfileirarRegua(config, clientes) {
     diasAntesAviso: Number(config.dias_antes_aviso),
     diasRepetirCobranca: Number(config.dias_repetir_cobranca),
   });
+
+  // Texto mais recente já mandado (ou enfileirado) por cliente+tipo, pra
+  // lib/mensagens-whatsapp.js não sortear a mesma variação em sequência.
+  const ultimoTextoPorChave = new Map();
+  for (const m of mensagensExistentes) {
+    ultimoTextoPorChave.set(`${m.tipo}:${m.cliente_id}`, m.texto);
+  }
+
+  const statusNovaMensagem = config.whatsapp_envio_automatico === false ? 'pendente_revisao' : 'pendente';
 
   for (const envio of envios) {
     // Confere o telefone JÁ AQUI, antes de gravar — não em mandarPendentes.
@@ -120,11 +135,12 @@ async function enfileirarRegua(config, clientes) {
       continue;
     }
 
-    const { tipo, texto } = montarMensagemWhatsApp(envio);
+    const ultimoTexto = ultimoTextoPorChave.get(`${envio.tipo}:${envio.cliente.id}`);
+    const { tipo, texto } = montarMensagemWhatsApp({ ...envio, ultimoTexto });
     const tituloId = envio.titulo ? envio.titulo.id : null; // 'atraso' pode juntar vários títulos: não amarra a um só
     const { error: erroInsert } = await supabase
       .from('mensagens')
-      .insert({ cliente_id: envio.cliente.id, titulo_id: tituloId, tipo, texto, status: 'pendente' });
+      .insert({ cliente_id: envio.cliente.id, titulo_id: tituloId, tipo, texto, status: statusNovaMensagem });
     if (erroInsert) {
       console.error(`Erro ao enfileirar mensagem de ${envio.cliente.nome}:`, erroInsert.message);
       // Mesma pausa que mandarPendentes usa entre envios — sem ela, uma falha

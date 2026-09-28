@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { PlusIcon, SearchIcon } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
@@ -9,6 +9,17 @@ import { combinaComBusca } from '../../../lib/util';
 import { GlassPanel } from '../ui/GlassPanel';
 import { PageHeader } from '../ui/PageHeader';
 import { ClienteRow, colunasClientes } from './ClienteRow';
+
+// Atrasa a atualização do valor em `atrasoMs` — evita refiltrar a lista a
+// cada tecla digitada na busca.
+function useDebouncedValue(valor, atrasoMs) {
+  const [debounced, setDebounced] = useState(valor);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(valor), atrasoMs);
+    return () => clearTimeout(id);
+  }, [valor, atrasoMs]);
+  return debounced;
+}
 
 const FILTROS = [
   { valor: 'todos', rotulo: 'Todos' },
@@ -29,13 +40,20 @@ export function ListaClientes({ clientes }) {
     return c;
   }, [clientes]);
 
+  const buscaDebounced = useDebouncedValue(busca, 200);
+
   const visiveis = useMemo(() => {
+    const digitosBusca = buscaDebounced.replace(/\D/g, '');
     return clientes.filter(
       (c) =>
         (filtro === 'todos' || c.risco.nivel === filtro) &&
-        (combinaComBusca(c.nome, busca) || (c.segmento && combinaComBusca(c.segmento, busca)) || c.telefone.includes(busca))
+        (combinaComBusca(c.nome, buscaDebounced) ||
+          (c.bairro && combinaComBusca(c.bairro, buscaDebounced)) ||
+          (c.cidade && combinaComBusca(c.cidade, buscaDebounced)) ||
+          c.telefone.includes(buscaDebounced) ||
+          (digitosBusca && c.telefone.replace(/\D/g, '').includes(digitosBusca)))
     );
-  }, [clientes, busca, filtro]);
+  }, [clientes, buscaDebounced, filtro]);
 
   return (
     <div>

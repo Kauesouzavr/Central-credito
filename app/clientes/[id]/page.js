@@ -25,11 +25,15 @@ export default async function FichaCliente({ params }) {
     );
   }
 
-  const { data: titulosBrutos, error: erroTitulos } = await supabase
-    .from('titulos_com_saldo')
-    .select('*')
-    .eq('cliente_id', id)
-    .order('data_vencimento', { ascending: true });
+  // Títulos, mensagens e risco não dependem uns dos outros — buscados em
+  // paralelo. Pagamentos dependem dos ids dos títulos, então só entram
+  // depois (também em paralelo com o resto continuando disponível acima).
+  const [{ data: titulosBrutos, error: erroTitulos }, { data: mensagens }, { riscoDe, erro: erroRisco }] =
+    await Promise.all([
+      supabase.from('titulos_com_saldo').select('*').eq('cliente_id', id).order('data_vencimento', { ascending: true }),
+      supabase.from('mensagens').select('*').eq('cliente_id', id).order('criado_em', { ascending: false }).limit(20),
+      carregarRiscos(supabase, { clienteId: id }),
+    ]);
 
   const idsTitulos = (titulosBrutos || []).map((t) => t.id);
   const { data: pagamentosBrutos } =
@@ -49,14 +53,6 @@ export default async function FichaCliente({ params }) {
   }
   const titulos = (titulosBrutos || []).map((t) => ({ ...t, pagamentos: pagamentosPorTitulo.get(t.id) || [] }));
 
-  const { data: mensagens } = await supabase
-    .from('mensagens')
-    .select('*')
-    .eq('cliente_id', id)
-    .order('criado_em', { ascending: false })
-    .limit(20);
-
-  const { riscoDe, erro: erroRisco } = await carregarRiscos(supabase, { clienteId: id });
   const risco = riscoDe(id) || { nota: 0, nivel: 'baixo', motivos: [] };
 
   return (
