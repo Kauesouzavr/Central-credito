@@ -5,6 +5,7 @@ import { ReguaTimeline } from '../componentes/regua/ReguaTimeline';
 import { MensagemFeed } from '../componentes/regua/MensagemFeed';
 import { ConexaoWhatsApp } from '../componentes/regua/ConexaoWhatsApp';
 import { PausarEnviosButton } from '../componentes/regua/PausarEnviosButton';
+import { AutoEnvioToggle } from '../componentes/regua/AutoEnvioToggle';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,8 +17,19 @@ export default async function Cobranca() {
     <div>
       <PageHeader
         title="Cobrança automática"
-        subtitle="As mensagens saem sozinhas pelo WhatsApp, com textos variados, sem precisar aprovar."
-        actions={config && <PausarEnviosButton pausado={config.whatsapp_pausado} />}
+        subtitle={
+          config?.whatsapp_envio_automatico === false
+            ? 'As mensagens da régua ficam esperando sua aprovação antes de sair.'
+            : 'As mensagens saem sozinhas pelo WhatsApp, com textos variados, sem precisar aprovar.'
+        }
+        actions={
+          config && (
+            <div className="flex flex-wrap gap-3">
+              <AutoEnvioToggle automatico={config.whatsapp_envio_automatico !== false} />
+              <PausarEnviosButton pausado={config.whatsapp_pausado} />
+            </div>
+          )
+        }
       />
 
       {erro && (

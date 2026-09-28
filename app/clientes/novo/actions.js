@@ -2,29 +2,33 @@
 
 import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '../../../lib/supabase-server';
-import { FORMAS_PAGAMENTO, formatarTelefoneE164, hojeBrasil } from '../../../lib/util';
+import { FORMAS_PAGAMENTO, formatarTelefoneE164, hojeBrasil, lerCampo, lerValor } from '../../../lib/util';
 import { montarMensagemWhatsApp } from '../../../lib/mensagens-whatsapp';
 
-export async function criarCliente(formData) {
-  const nome = (formData.get('nome') || '').toString().trim();
-  const telefone = (formData.get('telefone') || '').toString().trim();
-  const telefoneReserva = (formData.get('telefone_reserva') || '').toString().trim();
-  const segmento = (formData.get('segmento') || '').toString().trim();
+function soDigitos(telefone) {
+  return String(telefone ?? '').replace(/\D/g, '');
+}
 
-  const produto = (formData.get('produto') || '').toString().trim();
-  const valorTexto = (formData.get('valor') || '').toString().trim();
-  const dataVencimento = (formData.get('data_vencimento') || '').toString().trim();
-  const formaPagamento = (formData.get('forma_pagamento') || '').toString().trim();
+export async function criarCliente(formData) {
+  const nome = lerCampo(formData, 'nome');
+  const telefone = lerCampo(formData, 'telefone');
+  const telefoneReserva = lerCampo(formData, 'telefone_reserva');
+  const cep = lerCampo(formData, 'cep');
+  const bairro = lerCampo(formData, 'bairro');
+  const cidade = lerCampo(formData, 'cidade');
+  const endereco = lerCampo(formData, 'endereco');
+  const numero = lerCampo(formData, 'numero');
+
+  const produto = lerCampo(formData, 'produto');
+  const valor = lerValor(lerCampo(formData, 'valor'));
+  const dataVencimento = lerCampo(formData, 'data_vencimento');
+  const formaPagamento = lerCampo(formData, 'forma_pagamento');
 
   const erros = [];
   if (!nome) erros.push('Nome é obrigatório');
   if (!telefone) erros.push('Telefone é obrigatório');
   if (!produto) erros.push('Produto é obrigatório');
-
-  const valor = Number(valorTexto.replace(',', '.'));
-  if (!valorTexto || Number.isNaN(valor) || valor <= 0) {
-    erros.push('Valor precisa ser um número maior que zero');
-  }
+  if (valor === null) erros.push('Valor precisa ser um número maior que zero');
   if (!dataVencimento) erros.push('Data de vencimento é obrigatória');
   if (!FORMAS_PAGAMENTO.includes(formaPagamento)) erros.push('Forma de pagamento inválida');
 
@@ -35,13 +39,35 @@ export async function criarCliente(formData) {
 
   const supabase = getSupabaseServerClient();
 
+  const digitosTelefone = soDigitos(telefone);
+  const { data: existentes, error: erroBusca } = await supabase
+    .from('clientes')
+    .select('id, nome, telefone, telefone_reserva');
+  if (erroBusca) {
+    redirect(`/clientes?novo=1&erro=${encodeURIComponent('Erro ao conferir telefone: ' + erroBusca.message)}`);
+    return;
+  }
+  const duplicado = existentes.find(
+    (c) => soDigitos(c.telefone) === digitosTelefone || soDigitos(c.telefone_reserva) === digitosTelefone
+  );
+  if (duplicado) {
+    redirect(
+      `/clientes?novo=1&erro=${encodeURIComponent(`Já existe um cliente com esse telefone: ${duplicado.nome}.`)}`
+    );
+    return;
+  }
+
   const { data: cliente, error: erroCliente } = await supabase
     .from('clientes')
     .insert({
       nome,
       telefone,
       telefone_reserva: telefoneReserva || null,
-      segmento: segmento || null,
+      cep: cep || null,
+      bairro: bairro || null,
+      cidade: cidade || null,
+      endereco: endereco || null,
+      numero: numero || null,
     })
     .select()
     .single();

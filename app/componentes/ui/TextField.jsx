@@ -1,9 +1,12 @@
 'use client';
 
-import { useId } from 'react';
+import { forwardRef, useId } from 'react';
 import { twMerge } from 'tailwind-merge';
 
-export function TextField({ label, hint, error, leading, optional, className, id, ...rest }) {
+export const TextField = forwardRef(function TextField(
+  { label, hint, error, leading, optional, className, id, ...rest },
+  ref
+) {
   const gerado = useId();
   const campoId = id ?? gerado;
   const ajudaId = `${campoId}-ajuda`;
@@ -22,6 +25,7 @@ export function TextField({ label, hint, error, leading, optional, className, id
       >
         {leading && <span className="mr-2 text-lg font-semibold text-ink-faint">{leading}</span>}
         <input
+          ref={ref}
           id={campoId}
           aria-invalid={Boolean(error)}
           aria-describedby={error || hint ? ajudaId : undefined}
@@ -42,4 +46,4 @@ export function TextField({ label, hint, error, leading, optional, className, id
       )}
     </div>
   );
-}
+});

@@ -38,7 +38,7 @@ Nenhum. **"Central de Crédito" é um nome provisório** (confirmado com o usuá
 
 ## Evidence on Hand
 
-Nenhum dado real. Só dados fictícios de teste (clientes com segmento `TESTE`, telefones inválidos de propósito). Nenhum depoimento, case, número real de negócio ou prova social existe — nada disso deve ser inventado ou simulado como se fosse real.
+Nenhum dado real. Só dados fictícios de teste (clientes com cidade `TESTE`, telefones inválidos de propósito). Nenhum depoimento, case, número real de negócio ou prova social existe — nada disso deve ser inventado ou simulado como se fosse real.
 
 ## Product Principles
 

@@ -6,7 +6,12 @@ export async function GET() {
   const supabase = getSupabaseServerClient();
 
   const [clientes, titulos] = await Promise.all([
-    buscarTudo(() => supabase.from('clientes').select('id, nome, telefone, segmento').order('nome', { ascending: true })),
+    buscarTudo(() =>
+      supabase
+        .from('clientes')
+        .select('id, nome, telefone, endereco, numero, bairro, cidade, cep')
+        .order('nome', { ascending: true })
+    ),
     buscarTudo(() => supabase.from('titulos_com_saldo').select('*').order('data_vencimento', { ascending: true })),
   ]);
 

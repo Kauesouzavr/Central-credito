@@ -11,25 +11,53 @@ import {
   paraCentavos,
 } from '../../../lib/util';
 
+function soDigitos(telefone) {
+  return String(telefone ?? '').replace(/\D/g, '');
+}
+
 export async function atualizarCliente(formData) {
   const clienteId = lerCampo(formData, 'cliente_id');
   const nome = lerCampo(formData, 'nome');
   const telefone = lerCampo(formData, 'telefone');
   const telefoneReserva = lerCampo(formData, 'telefone_reserva');
-  const segmento = lerCampo(formData, 'segmento');
+  const cep = lerCampo(formData, 'cep');
+  const bairro = lerCampo(formData, 'bairro');
+  const cidade = lerCampo(formData, 'cidade');
+  const endereco = lerCampo(formData, 'endereco');
+  const numero = lerCampo(formData, 'numero');
 
   if (!nome || !telefone) {
     voltarParaFicha(clienteId, 'erro', 'Nome e telefone são obrigatórios.');
   }
 
   const supabase = getSupabaseServerClient();
+
+  const digitosTelefone = soDigitos(telefone);
+  const { data: existentes, error: erroBusca } = await supabase
+    .from('clientes')
+    .select('id, nome, telefone, telefone_reserva')
+    .neq('id', clienteId);
+  if (erroBusca) {
+    voltarParaFicha(clienteId, 'erro', 'Erro ao conferir telefone: ' + erroBusca.message);
+  }
+  const duplicado = existentes?.find(
+    (c) => soDigitos(c.telefone) === digitosTelefone || soDigitos(c.telefone_reserva) === digitosTelefone
+  );
+  if (duplicado) {
+    voltarParaFicha(clienteId, 'erro', `Já existe um cliente com esse telefone: ${duplicado.nome}.`);
+  }
+
   const { error } = await supabase
     .from('clientes')
     .update({
       nome,
       telefone,
       telefone_reserva: telefoneReserva || null,
-      segmento: segmento || null,
+      cep: cep || null,
+      bairro: bairro || null,
+      cidade: cidade || null,
+      endereco: endereco || null,
+      numero: numero || null,
     })
     .eq('id', clienteId);
 
@@ -38,6 +66,20 @@ export async function atualizarCliente(formData) {
   }
 
   voltarParaFicha(clienteId, 'ok', 'Dados atualizados.');
+}
+
+export async function excluirCliente(formData) {
+  const clienteId = lerCampo(formData, 'cliente_id');
+
+  const supabase = getSupabaseServerClient();
+  const { error } = await supabase.from('clientes').delete().eq('id', clienteId);
+
+  if (error) {
+    redirect(`/clientes?erro=${encodeURIComponent('Erro ao excluir cliente: ' + error.message)}`);
+    return;
+  }
+
+  redirect(`/clientes?ok=${encodeURIComponent('Cliente excluído.')}`);
 }
 
 // Volta pra ficha do cliente, opcionalmente com uma mensagem de sucesso (ok)

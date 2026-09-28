@@ -62,6 +62,37 @@ export function AjustesInterativo({ config, clientesTitulos, ultimoPagamento }) 
           <h2 id="aj-risco" className="text-2xl font-extrabold tracking-tight text-ink">
             Risco
           </h2>
+          <details className="mt-3 mb-1">
+            <summary className="cursor-pointer text-base font-bold text-brand-700">Como o risco é calculado</summary>
+            <div className="mt-3 grid gap-3 text-base leading-relaxed text-ink-soft">
+              <p>Cada cliente começa com risco 0, e o sistema vai somando pontos:</p>
+              <ul className="grid gap-2 pl-5 [&>li]:list-disc">
+                <li>
+                  <strong className="text-ink">Atraso</strong>, o título em aberto mais atrasado soma pontos na
+                  proporção do atraso em relação ao &quot;Limite de atraso&quot; (até 60 pontos; passou do limite,
+                  vale o máximo).
+                </li>
+                <li>
+                  <strong className="text-ink">Perfil do cliente</strong>, cliente novo (nada quitado ainda) já
+                  entra com pontos por não ter histórico. Cliente antigo soma pontos conforme a proporção das
+                  compras quitadas que foram pagas com atraso (sempre em dia, zero pontos aqui), até 20 pontos.
+                </li>
+                <li>
+                  <strong className="text-ink">Mudança de comportamento</strong>, se o cliente sempre pagou em dia
+                  e agora atrasou, soma até o valor do &quot;Peso da mudança&quot; em pontos.
+                </li>
+                <li>
+                  <strong className="text-ink">Vários títulos em aberto</strong>, se tem mais de uma compra em
+                  aberto ao mesmo tempo, soma 15 pontos.
+                </li>
+              </ul>
+              <p>
+                O total nunca passa de 100. Igual ou acima de &quot;Risco alto a partir de&quot; entra na faixa
+                vermelha; abaixo disso mas igual ou acima de &quot;Risco médio a partir de&quot; fica laranja; o
+                resto é risco baixo (verde).
+              </p>
+            </div>
+          </details>
           <div className="divide-y divide-line">
             <NumberStepper
               label="Limite de atraso"

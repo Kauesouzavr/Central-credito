@@ -15,7 +15,7 @@ export default async function Ajustes() {
     <div>
       <PageHeader
         title="Ajustes"
-        subtitle="Os números que decidem quem é risco e quando cada mensagem sai. Mude com calma — dá para desfazer antes de salvar."
+        subtitle="Os números que decidem quem é risco e quando cada mensagem sai. Mude com calma, dá para desfazer antes de salvar."
       />
 
       {erro && (
