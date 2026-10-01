@@ -205,23 +205,36 @@ async function mandarPendentes(sock, config, clientes) {
       continue;
     }
 
+    let enviouComSucesso = false;
     try {
       await sock.sendMessage(`${telefone}@s.whatsapp.net`, { text: msg.texto });
-      const { error: erroUpdate } = await supabase
-        .from('mensagens')
-        .update({ status: 'enviada', enviado_em: new Date().toISOString() })
-        .eq('id', msg.id);
-      if (erroUpdate) {
-        // A mensagem já foi mandada de verdade pro WhatsApp — só o registro no
-        // banco que não atualizou. Avisa alto: sem isso a régua vai achar que
-        // esse cliente nunca foi avisado e manda nele de novo no próximo ciclo.
-        console.error(`Mandei pra ${nome}, mas não consegui marcar como 'enviada' no banco:`, erroUpdate.message);
-      } else {
-        console.log(`Mandei pra ${nome} (${msg.tipo}).`);
-      }
+      enviouComSucesso = true;
     } catch (e) {
       await supabase.from('mensagens').update({ status: 'erro' }).eq('id', msg.id);
       console.error(`Erro ao mandar pra ${nome}:`, e.message);
+    }
+
+    if (enviouComSucesso) {
+      // A mensagem já foi mandada de verdade pro WhatsApp daqui pra baixo —
+      // uma falha só em GRAVAR isso nunca pode cair no catch acima e marcar
+      // 'erro': a régua não reconhece 'erro' como "já avisado" e mandaria a
+      // mesma cobrança de novo, duplicando pro cliente.
+      try {
+        const { error: erroUpdate } = await supabase
+          .from('mensagens')
+          .update({ status: 'enviada', enviado_em: new Date().toISOString() })
+          .eq('id', msg.id);
+        if (erroUpdate) {
+          // Mandou de verdade, só o registro no banco que não atualizou.
+          // Avisa alto: sem isso a régua acha que esse cliente nunca foi
+          // avisado e manda nele de novo no próximo ciclo.
+          console.error(`Mandei pra ${nome}, mas não consegui marcar como 'enviada' no banco:`, erroUpdate.message);
+        } else {
+          console.log(`Mandei pra ${nome} (${msg.tipo}).`);
+        }
+      } catch (e) {
+        console.error(`Mandei pra ${nome}, mas não consegui marcar como 'enviada' no banco:`, e.message);
+      }
     }
 
     await esperar(atrasoAleatorioMs(config.whatsapp_atraso_min_segundos, config.whatsapp_atraso_max_segundos));
