@@ -4,24 +4,19 @@ import { useRef, useState } from 'react';
 import { formatarCepDigitado, formatarTelefoneDigitado } from '../../../lib/util';
 import { TextField } from '../ui/TextField';
 
-// Preenche bairro/cidade/endereço a partir do CEP (ViaCEP). Não sobrescreve
-// o que a pessoa já tiver digitado à mão no endereço, só bairro/cidade (que
-// vêm certos do CEP e não fazem sentido editar antes de buscar).
-async function buscarEnderecoPorCep(cepDigitado, refs) {
+// Só busca na ViaCEP e devolve o resultado — não escreve em nada. Quem chama
+// decide se ainda vale a pena aplicar (a pessoa pode ter digitado outro CEP
+// enquanto essa busca estava no ar).
+async function buscarEnderecoPorCep(cepDigitado) {
   const digitos = cepDigitado.replace(/\D/g, '');
   if (digitos.length !== 8) return null;
   try {
     const resposta = await fetch(`https://viacep.com.br/ws/${digitos}/json/`);
     const dados = await resposta.json();
-    if (dados.erro) return 'nao_encontrado';
-    if (refs.bairro.current) refs.bairro.current.value = dados.bairro || '';
-    if (refs.cidade.current) refs.cidade.current.value = dados.localidade || '';
-    if (refs.endereco.current && !refs.endereco.current.value) {
-      refs.endereco.current.value = dados.logradouro || '';
-    }
-    return 'ok';
+    if (dados.erro) return { status: 'nao_encontrado' };
+    return { status: 'ok', dados };
   } catch {
-    return 'erro';
+    return { status: 'erro' };
   }
 }
 
@@ -34,21 +29,33 @@ export function ClienteFields({ cliente, autoFocus }) {
   const cidadeRef = useRef(null);
   const enderecoRef = useRef(null);
   const [statusCep, setStatusCep] = useState(null); // null | 'buscando' | 'nao_encontrado' | 'erro'
+  const buscaIdRef = useRef(0); // conta qual é a busca mais recente, pra ignorar respostas desatualizadas
 
   async function aoDigitarCep(evento) {
     evento.target.value = formatarCepDigitado(evento.target.value);
     const digitos = evento.target.value.replace(/\D/g, '');
+    const minhaBuscaId = ++buscaIdRef.current;
     if (digitos.length < 8) {
       setStatusCep(null);
       return;
     }
     setStatusCep('buscando');
-    const resultado = await buscarEnderecoPorCep(evento.target.value, {
-      bairro: bairroRef,
-      cidade: cidadeRef,
-      endereco: enderecoRef,
-    });
-    setStatusCep(resultado === 'ok' ? null : resultado);
+    const resultado = await buscarEnderecoPorCep(evento.target.value);
+
+    // Enquanto essa busca estava no ar, a pessoa pode ter apagado e digitado
+    // outro CEP — isso já disparou uma busca mais nova. Se não somos mais a
+    // mais recente, ignora: aplicar agora sobrescreveria com um CEP errado.
+    if (buscaIdRef.current !== minhaBuscaId) return;
+
+    if (resultado?.status === 'ok') {
+      const { dados } = resultado;
+      if (bairroRef.current) bairroRef.current.value = dados.bairro || '';
+      if (cidadeRef.current) cidadeRef.current.value = dados.localidade || '';
+      if (enderecoRef.current && !enderecoRef.current.value) {
+        enderecoRef.current.value = dados.logradouro || '';
+      }
+    }
+    setStatusCep(resultado?.status === 'ok' ? null : (resultado?.status ?? null));
   }
 
   function aoDigitarTelefone(evento) {
