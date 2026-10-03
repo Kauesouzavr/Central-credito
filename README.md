@@ -4,7 +4,7 @@
 
 *English summary: a web app to manage store-credit ("pay later") sales — customers, receivables, partial payments, default-risk scoring and, on the roadmap, WhatsApp collection reminders and a cash-flow forecast. Built with Next.js (App Router + Server Actions) and Supabase (PostgreSQL).*
 
-**Status:** 🚧 em desenvolvimento — Fases 1 a 8 concluídas; próxima: Fase 9 (testes finais e ajuste dos parâmetros com dados reais).
+**Status:** 🚧 em desenvolvimento — Fases 1 a 9 concluídas (ajuste fino dos parâmetros com dados reais fica pra depois do fechamento com o cliente).
 
 ---
 
@@ -136,7 +136,7 @@ Além das tabelas, a view `titulos_com_saldo` entrega cada título já com saldo
 | 6 | **Régua de cobrança via WhatsApp** (Baileys): decide quem avisar/cobrar (`lib/regua.js`), monta o texto (`lib/mensagens-whatsapp.js`) e manda pelo bot (`scripts/whatsapp-bot.mjs`), com limite de mensagens e atraso aleatório entre envios | ✅ |
 | 7 | **Relatório semanal** (`/relatorio`): vendido, recebido, clientes novos, títulos que atrasaram e mensagens de WhatsApp mandadas, últimos 7 dias comparados com os 7 anteriores | ✅ |
 | 8 | **Redesign visual**: painel vermelho/marca, cartões "glass", Manrope, animações — port de um protótipo do MagicPatterns, incluindo as telas novas **Cobrança** (`/cobranca`, pausar/retomar a régua) e **Ajustes** (`/ajustes`, números de risco e cobrança com prévia ao vivo) (ver [`DESIGN.md`](DESIGN.md)) | ✅ |
-| 9 | Testes finais e ajuste dos parâmetros com dados reais | ⏳ |
+| 9 | Testes finais (revisão de código, correções e teste de uso real) e parâmetros padrão em uso. Ajuste fino com dados reais fica pra depois do fechamento com o cliente | ✅ |
 
 ## Como rodar localmente
 
