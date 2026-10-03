@@ -59,6 +59,22 @@ export async function alternarEnvioAutomatico() {
   );
 }
 
+// Remove do histórico uma mensagem que não foi enviada. Só apaga status 'erro':
+// nunca mexe em mensagem já enviada nem na fila.
+export async function apagarMensagemErro(formData) {
+  const mensagemId = (formData.get('mensagem_id') || '').toString().trim();
+
+  const supabase = getSupabaseServerClient();
+  const { error } = await supabase.from('mensagens').delete().eq('id', mensagemId).eq('status', 'erro');
+
+  if (error) {
+    redirect(`/cobranca?erro=${encodeURIComponent('Erro ao remover mensagem: ' + error.message)}`);
+    return;
+  }
+
+  redirect(`/cobranca?ok=${encodeURIComponent('Mensagem removida do histórico.')}`);
+}
+
 // Aprova uma mensagem que estava esperando revisão (Fase 9): ela sai
 // 'pendente' e é mandada no próximo ciclo do bot (scripts/whatsapp-bot.mjs) —
 // o site não fala com o Baileys diretamente, são processos separados.
