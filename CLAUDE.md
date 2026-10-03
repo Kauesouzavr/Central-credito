@@ -46,7 +46,8 @@ conferir valor atual na hora de contratar. Ordenado por prioridade.
   desenvolvedor ligado e o processo rodando — desligou, para a cobrança
   automática, e nesse dia (01→02/10) ele ficou **travado "vivo" por 8h sem
   mandar nada**, sem nem cair (bug separado dos de queda/crash, que a tarefa
-  agendada do Windows já cobre). Resolve com um dos dois:
+  agendada do Windows já cobre). Decisão (2026-10-03): por enquanto o bot
+  roda só neste PC do trabalho, até o negócio fechar. Resolve com um dos dois:
   - **VPS barato sempre ligado** (~R$20-30/mês, ex.: Oracle Cloud tem camada
     grátis) rodando o mesmo código Baileys — mais rápido de fazer, não muda
     a integração que já funciona.
