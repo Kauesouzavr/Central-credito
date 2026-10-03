@@ -25,6 +25,7 @@
 
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { appendFileSync } from 'node:fs';
 import makeWASocket, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import qrcode from 'qrcode-terminal';
@@ -39,6 +40,8 @@ import { MARCA_COBRANCA_MANUAL } from '../lib/hoje.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PASTA_SESSAO = path.join(__dirname, '..', 'whatsapp-auth');
 const INTERVALO_CICLO_MS = 10 * 60 * 1000; // a cada 10 min, olha se tem mensagem nova pra mandar
+const AQUECIMENTO_CONEXAO_MS = 60 * 1000;
+const ARQUIVO_LOG = path.join(__dirname, '..', 'whatsapp-bot.log');
 
 const url = process.env.SUPABASE_URL;
 const chave = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -212,6 +215,7 @@ async function mandarPendentes(sock, config, clientes) {
     } catch (e) {
       await supabase.from('mensagens').update({ status: 'erro' }).eq('id', msg.id);
       console.error(`Erro ao mandar pra ${nome}:`, e.message);
+      appendFileSync(ARQUIVO_LOG, `[${new Date().toISOString()}] Erro ao mandar pra ${nome}: ${e.message}\n`);
     }
 
     if (enviouComSucesso) {
@@ -265,6 +269,7 @@ async function cicloDeEnvio(sock) {
 // `sockAtual` sempre aponta pro socket vivo no momento; o loop de envio em
 // main() usa essa referência, em vez de reiniciar o loop inteiro a cada queda.
 let sockAtual = null;
+let sockAbertoEm = 0;
 
 // Depois de muitas quedas seguidas (sem nenhuma conexão ESTÁVEL no meio),
 // para de tentar e derruba o processo — sem isso, um problema permanente
@@ -303,6 +308,7 @@ async function conectar() {
 
     if (connection === 'open') {
       sockAtual = sock;
+      sockAbertoEm = Date.now();
       console.log('Conectado ao WhatsApp.');
       temporizadorEstabilidade = setTimeout(() => {
         falhasConsecutivas = 0;
@@ -357,7 +363,13 @@ async function main() {
   // eslint-disable-next-line no-constant-condition
   while (true) {
     try {
-      if (sockAtual) await cicloDeEnvio(sockAtual);
+      if (sockAtual) {
+        // Logo depois de conectar, os primeiros envios falham (visto na prática:
+        // "não enviada" em sequência). Espera a conexão estabilizar antes do ciclo.
+        const aquecendo = AQUECIMENTO_CONEXAO_MS - (Date.now() - sockAbertoEm);
+        if (aquecendo > 0) await esperar(aquecendo);
+        if (sockAtual) await cicloDeEnvio(sockAtual);
+      }
     } catch (e) {
       console.error('Erro no ciclo de envio:', e.message);
     }
