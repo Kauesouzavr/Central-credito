@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { CheckIcon } from 'lucide-react';
+import { CheckIcon, Trash2Icon } from 'lucide-react';
 import { tempoRelativo } from '../../../lib/util';
 import { instanteMensagem, ROTULO_STATUS_MENSAGEM, ROTULO_TIPO_MENSAGEM } from '../../../lib/mensagem-ui';
-import { aprovarEnvio } from '../../cobranca/actions';
+import { aprovarEnvio, apagarMensagemErro } from '../../cobranca/actions';
 import BotaoAcao from '../BotaoAcao';
 import { Avatar } from '../ui/Avatar';
 import { GlassPanel } from '../ui/GlassPanel';
@@ -37,6 +37,19 @@ function Item({ m }) {
             >
               <CheckIcon className="h-4 w-4" aria-hidden="true" />
               Aprovar e enviar
+            </BotaoAcao>
+          </form>
+        )}
+        {m.status === 'erro' && (
+          <form action={apagarMensagemErro} className="mt-2">
+            <input type="hidden" name="mensagem_id" value={m.id} />
+            <BotaoAcao
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-bold text-ink-soft ring-1 ring-line transition-colors duration-150 hover:text-brand-700"
+              confirmar="Remover esta mensagem do histórico? Ela não foi enviada."
+              textoEnviando="Removendo..."
+            >
+              <Trash2Icon className="h-4 w-4" aria-hidden="true" />
+              Remover
             </BotaoAcao>
           </form>
         )}
