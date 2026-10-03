@@ -36,6 +36,13 @@ conferir valor atual na hora de contratar. Ordenado por prioridade.
   automático — com dado financeiro real de cliente, perder isso é grave. O
   plano Pro (~US$25/mês, uns R$130-150) tira o auto-pause e dá backup diário.
   É o item mais crítico da lista.
+- **Login e proteção de acesso**: hoje o site não tem tela de login. Quem
+  tiver o endereço vê todos os clientes, telefones e dívidas, e consegue
+  registrar pagamento e aprovar mensagens. Por enquanto isso é aceito
+  (demonstração, um único usuário). Antes de uso real, precisa de login e de
+  regras de acesso no banco. O login pode usar o Supabase Auth (conferir se
+  continua no plano gratuito). O custo principal aqui é tempo de
+  desenvolvimento, não necessariamente dinheiro.
 - **Hospedagem do site (Vercel) — plano pago**: o endereço atual
   (`central-credito.vercel.app`) é o subdomínio padrão do plano gratuito
   (Hobby) — os termos da Vercel geralmente restringem esse plano a uso
