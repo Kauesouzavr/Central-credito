@@ -1,12 +1,28 @@
 import './globals.css';
 import TopNav from './componentes/TopNav';
 import { Toaster } from './componentes/ui/Toaster';
+import { getSupabaseUsuarioClient } from '../lib/auth-server';
 
 export const metadata = {
   title: 'Central de Crédito',
 };
 
-export default function RootLayout({ children }) {
+// Busca o nome do negócio de quem está logado, pro TopNav. Sem sessão (tela
+// de login), devolve null — o TopNav nem aparece nessa tela.
+async function buscarNomeNegocio() {
+  const supabase = await getSupabaseUsuarioClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: perfil } = await supabase.from('perfis').select('nome_negocio').eq('user_id', user.id).single();
+  return perfil?.nome_negocio || 'Minha Empresa';
+}
+
+export default async function RootLayout({ children }) {
+  const nomeNegocio = await buscarNomeNegocio();
+
   return (
     <html lang="pt-BR">
       <body>
@@ -37,7 +53,7 @@ DESIGN.md) — conferência final feita pelo usuário no "npm run dev"/deploy.
 -->`,
           }}
         />
-        <TopNav />
+        <TopNav nomeNegocio={nomeNegocio} />
         <main className="mx-auto w-full max-w-[1440px] px-4 pb-20 pt-10 sm:px-6 lg:px-8">{children}</main>
         <Toaster />
       </body>
