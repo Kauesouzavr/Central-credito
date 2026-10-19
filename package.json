@@ -2,6 +2,7 @@
   "name": "central-credito",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -12,6 +13,7 @@
     "whatsapp:bot": "node --no-warnings --env-file=.env.local scripts/whatsapp-bot.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.0",
     "@whiskeysockets/baileys": "^7.0.0-rc14",
     "autoprefixer": "^10.6.1",
