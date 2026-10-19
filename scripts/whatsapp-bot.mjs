@@ -25,7 +25,7 @@
 
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, writeFileSync } from 'node:fs';
 import makeWASocket, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import qrcode from 'qrcode-terminal';
@@ -42,6 +42,10 @@ const PASTA_SESSAO = path.join(__dirname, '..', 'whatsapp-auth');
 const INTERVALO_CICLO_MS = 10 * 60 * 1000; // a cada 10 min, olha se tem mensagem nova pra mandar
 const AQUECIMENTO_CONEXAO_MS = 60 * 1000;
 const ARQUIVO_LOG = path.join(__dirname, '..', 'whatsapp-bot.log');
+// "Sinal de vida": gravado a cada volta do loop principal (scripts/watchdog-bot.ps1
+// usa a data de modificação pra saber se o processo travou "vivo" sem cair —
+// já aconteceu duas vezes, sem isso o watchdog não teria como perceber).
+const ARQUIVO_PULSO = path.join(__dirname, '..', 'whatsapp-bot.heartbeat');
 
 const url = process.env.SUPABASE_URL;
 const chave = process.env.SUPABASE_SERVICE_ROLE_KEY;
