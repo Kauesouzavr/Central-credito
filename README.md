@@ -158,17 +158,20 @@ Testes automáticos (motor de risco, busca, tela "Hoje" e previsão de caixa): `
 
 A tabela `mensagens` funciona como fila: qualquer parte do app pode gravar uma linha com `status: 'pendente'` (hoje, só o cadastro de cliente novo faz isso, em [`app/clientes/novo/actions.js`](app/clientes/novo/actions.js)) e o bot manda pra frente a cada ciclo — não precisa saber quem gravou. Os outros três tipos (antes do vencimento, vencimento, atraso) são decididos pela própria régua (`lib/regua.js`), a cada ciclo.
 
-**Ligar o bot sozinho ao entrar no Windows** (opcional, configurar uma vez por computador): depois de já ter escaneado o QR code pelo menos uma vez, registre uma tarefa no Agendador de Tarefas do Windows apontando pra [`scripts/iniciar-bot.bat`](scripts/iniciar-bot.bat), disparada por "Ao fazer logon" do seu usuário, com reinício automático se cair. Pelo PowerShell:
+**Ligar o bot sozinho, e mantê-lo rodando sem precisar olhar pra ele** (opcional, configurar uma vez por computador): depois de já ter escaneado o QR code pelo menos uma vez, registre uma tarefa no Agendador de Tarefas do Windows apontando pra [`scripts/iniciar-bot.bat`](scripts/iniciar-bot.bat). Dois gatilhos juntos: "Ao fazer logon" (liga quando o computador é ligado/alguém entra) e um que repete a cada 5 minutos pra sempre — como a tarefa já é configurada pra **ignorar um novo disparo se já tiver uma instância rodando**, na prática isso funciona como um vigia: se o bot cair (ou for fechado sem querer), o próprio Windows liga ele de novo em até 5 minutos, sem precisar de nenhum script extra nem de ninguém notar. Pelo PowerShell:
 
 ```powershell
 $acao = New-ScheduledTaskAction -Execute "CAMINHO\ATE\O\PROJETO\scripts\iniciar-bot.bat" -WorkingDirectory "CAMINHO\ATE\O\PROJETO"
-$gatilho = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
-$config = New-ScheduledTaskSettingsSet -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero) -StartWhenAvailable
+$gatilhoLogon = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
+$gatilhoRepeticao = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 3650)
+$config = New-ScheduledTaskSettingsSet -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero) -StartWhenAvailable -MultipleInstances IgnoreNew
 $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
-Register-ScheduledTask -TaskName "CentralCredito-WhatsAppBot" -Action $acao -Trigger $gatilho -Settings $config -Principal $principal -Description "Bot de WhatsApp do Central de Credito"
+Register-ScheduledTask -TaskName "CentralCredito-WhatsAppBot" -Action $acao -Trigger @($gatilhoLogon, $gatilhoRepeticao) -Settings $config -Principal $principal -Description "Bot de WhatsApp do Central de Credito"
 ```
 
 Troque `CAMINHO\ATE\O\PROJETO` pelo caminho real nesse computador. **Nunca rode o bot manualmente enquanto a tarefa agendada já estiver de pé** — duas instâncias ao mesmo tempo competem pela mesma sessão do WhatsApp (`whatsapp-auth/`), o que arrisca corromper a sessão ou desconectar o número. Pra ver se já tem uma rodando: `Get-ScheduledTask -TaskName CentralCredito-WhatsAppBot` (no PowerShell) mostra o estado.
+
+O bot também se vigia por dentro: se ficar **20 minutos sem completar um ciclo** (`whatsapp-bot.heartbeat`, atualizado a cada volta do loop principal, não é versionado), ele mesmo se encerra — é assim que um travamento "vivo, mas sem fazer nada" (já aconteceu na prática, sem o processo cair sozinho) também acaba sendo corrigido pelo gatilho de repetição acima, em vez de ficar parado até alguém notar.
 
 ## Estrutura do projeto
 

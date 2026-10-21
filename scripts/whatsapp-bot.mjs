@@ -42,10 +42,16 @@ const PASTA_SESSAO = path.join(__dirname, '..', 'whatsapp-auth');
 const INTERVALO_CICLO_MS = 10 * 60 * 1000; // a cada 10 min, olha se tem mensagem nova pra mandar
 const AQUECIMENTO_CONEXAO_MS = 60 * 1000;
 const ARQUIVO_LOG = path.join(__dirname, '..', 'whatsapp-bot.log');
-// "Sinal de vida": gravado a cada volta do loop principal (scripts/watchdog-bot.ps1
-// usa a data de modificação pra saber se o processo travou "vivo" sem cair —
-// já aconteceu duas vezes, sem isso o watchdog não teria como perceber).
+// "Sinal de vida": gravado a cada volta do loop principal — já travou "vivo"
+// sem cair duas vezes (ver LIMITE_SEM_PULSO_MS mais abaixo), e o arquivo
+// serve também pra conferir de fora (ex.: olhando a data de modificação)
+// quando foi a última vez que o bot fez alguma coisa.
 const ARQUIVO_PULSO = path.join(__dirname, '..', 'whatsapp-bot.heartbeat');
+// Sem sinal de vida por tanto tempo (o ciclo é de 10 min): o processo se
+// derruba sozinho, e a tarefa agendada do Windows (RestartCount/
+// RestartInterval, já configurados) religa — mais simples e mais confiável
+// do que ter um segundo processo "vigia" só pra isso.
+const LIMITE_SEM_PULSO_MS = 20 * 60 * 1000;
 
 const url = process.env.SUPABASE_URL;
 const chave = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -274,6 +280,7 @@ async function cicloDeEnvio(sock) {
 // main() usa essa referência, em vez de reiniciar o loop inteiro a cada queda.
 let sockAtual = null;
 let sockAbertoEm = 0;
+let ultimoPulsoEm = Date.now();
 
 // Depois de muitas quedas seguidas (sem nenhuma conexão ESTÁVEL no meio),
 // para de tentar e derruba o processo — sem isso, um problema permanente
@@ -377,8 +384,21 @@ async function main() {
     } catch (e) {
       console.error('Erro no ciclo de envio:', e.message);
     }
+    // Prova de que o loop está vivo e girando, dê certo ou não o ciclo.
+    ultimoPulsoEm = Date.now();
+    writeFileSync(ARQUIVO_PULSO, new Date().toISOString());
     await esperar(INTERVALO_CICLO_MS);
   }
 }
+
+// Roda independente do loop principal (setInterval, não precisa esperar
+// nenhum await terminar) — é o que permite perceber um travamento mesmo
+// que o próprio loop esteja preso numa chamada que nunca resolve.
+setInterval(() => {
+  if (Date.now() - ultimoPulsoEm > LIMITE_SEM_PULSO_MS) {
+    console.error(`Sem sinal de vida há mais de ${LIMITE_SEM_PULSO_MS / 60000} min — encerrando pra a tarefa agendada religar.`);
+    process.exit(1);
+  }
+}, 60 * 1000);
 
 main();
