@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300" role="img" aria-label="Central de Crédito — Vendas a prazo sob controle, com nota de risco e cobrança automática">
+  <title>Central de Crédito — Vendas a prazo sob controle, com nota de risco e cobrança automática</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b0f17"/><stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.85" cy="0.3" r="0.6">
+      <stop offset="0" stop-color="#ef4444" stop-opacity="0.35"/><stop offset="1" stop-color="#ef4444" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="txt" x1="0" x2="1">
+      <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#fca5a5"/>
+    </linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#ffffff" stroke-opacity="0.04"/>
+    </pattern>
+    <linearGradient id="scan" x1="0" x2="1"><stop offset="0" stop-color="#ef4444" stop-opacity="0"/><stop offset="0.5" stop-color="#ef4444" stop-opacity="0.9"/><stop offset="1" stop-color="#ef4444" stop-opacity="0"/></linearGradient>
+    <clipPath id="r"><rect width="1200" height="300" rx="18"/></clipPath>
+  </defs>
+  <g clip-path="url(#r)">
+    <rect width="1200" height="300" fill="url(#bg)"/>
+    <rect width="1200" height="300" fill="url(#grid)"/>
+    <rect width="1200" height="300" fill="url(#glow)">
+      <animate attributeName="opacity" values="0.7;1;0.7" dur="6s" repeatCount="indefinite"/>
+    </rect>
+    <g transform="translate(1000,150)" fill="none" stroke-linecap="round">
+      <circle r="78" stroke="#ffffff" stroke-opacity="0.07" stroke-width="14"/>
+      <circle r="78" stroke="#ef4444" stroke-width="14" stroke-dasharray="490" stroke-dashoffset="490" transform="rotate(-90)">
+        <animate attributeName="stroke-dashoffset" values="490;150;490" dur="7s" repeatCount="indefinite"/></circle>
+      <circle r="48" stroke="#ffffff" stroke-opacity="0.07" stroke-width="8"/>
+      <circle r="48" stroke="#fbbf24" stroke-width="8" stroke-dasharray="302" stroke-dashoffset="302" transform="rotate(-90)">
+        <animate attributeName="stroke-dashoffset" values="302;120;302" dur="7s" begin="0.6s" repeatCount="indefinite"/></circle>
+    </g>
+    <rect y="0" width="260" height="2" fill="url(#scan)">
+      <animate attributeName="x" values="-260;1200" dur="4.5s" repeatCount="indefinite"/>
+    </rect>
+    <g font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="15" fill="#fca5a5">
+      <circle cx="70" cy="64" r="5" fill="#ef4444"><animate attributeName="opacity" values="1;0.25;1" dur="1.6s" repeatCount="indefinite"/></circle>
+      <text x="84" y="69" letter-spacing="2">PROJETO REAL · FEITO PARA UM CLIENTE</text>
+    </g>
+    <text x="62" y="138" font-family="'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="58" font-weight="800" fill="url(#txt)">Central de Crédito</text>
+    <text x="64" y="182" font-family="'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="22" fill="#9da7b3">Vendas a prazo sob controle, com nota de risco e cobrança automática</text>
+    <g transform="translate(64,214)"><rect width="114" height="32" rx="16" fill="#ffffff" fill-opacity="0.06" stroke="#ef4444" stroke-opacity="0.45"/><text x="57.0" y="21" text-anchor="middle" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="14" fill="#e6edf3">Next.js 16</text></g><g transform="translate(188,214)"><rect width="96" height="32" rx="16" fill="#ffffff" fill-opacity="0.06" stroke="#ef4444" stroke-opacity="0.45"/><text x="48.0" y="21" text-anchor="middle" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="14" fill="#e6edf3">React 19</text></g><g transform="translate(294,214)"><rect width="96" height="32" rx="16" fill="#ffffff" fill-opacity="0.06" stroke="#ef4444" stroke-opacity="0.45"/><text x="48.0" y="21" text-anchor="middle" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="14" fill="#e6edf3">Supabase</text></g><g transform="translate(400,214)"><rect width="96" height="32" rx="16" fill="#ffffff" fill-opacity="0.06" stroke="#ef4444" stroke-opacity="0.45"/><text x="48.0" y="21" text-anchor="middle" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="14" fill="#e6edf3">WhatsApp</text></g><g transform="translate(506,214)"><rect width="105" height="32" rx="16" fill="#ffffff" fill-opacity="0.06" stroke="#ef4444" stroke-opacity="0.45"/><text x="52.5" y="21" text-anchor="middle" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="14" fill="#e6edf3">98 testes</text></g>
+    <rect x="0.5" y="0.5" width="1199" height="299" rx="18" fill="none" stroke="#ffffff" stroke-opacity="0.08"/>
+  </g>
+</svg>

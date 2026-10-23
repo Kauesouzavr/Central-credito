@@ -1,10 +1,20 @@
-# Central de Crédito
+<div align="center">
+
+<img src=".github/assets/banner.svg" alt="Central de Crédito" width="100%"/>
+
+<img src="https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js 16"/> <img src="https://img.shields.io/badge/React_19-149ECA?style=for-the-badge&logo=react&logoColor=white" alt="React 19"/> <img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase"/> <img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS"/> <img src="https://img.shields.io/badge/WhatsApp_bot-25D366?style=for-the-badge&logo=whatsapp&logoColor=white" alt="WhatsApp bot"/>
+
+<a href="https://github.com/Kauesouzavr/Central-credito/actions/workflows/ci.yml"><img src="https://github.com/Kauesouzavr/Central-credito/actions/workflows/ci.yml/badge.svg" alt="CI"/></a> <a href="https://github.com/Kauesouzavr/Central-credito/actions/workflows/codeql.yml"><img src="https://github.com/Kauesouzavr/Central-credito/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"/></a> <a href="https://github.com/Kauesouzavr/Central-credito/actions/workflows/secret-scan.yml"><img src="https://github.com/Kauesouzavr/Central-credito/actions/workflows/secret-scan.yml/badge.svg" alt="Secret scan"/></a>
+
+<a href="#o-que-já-funciona"><b>Como funciona</b></a> · <a href="#decisões-técnicas-e-por-quê"><b>Decisões técnicas</b></a> · <a href="SECURITY.md"><b>Segurança</b></a> · <a href="#como-rodar-localmente"><b>Rodar localmente</b></a>
+
+</div>
+
+> 🇺🇸 **In English:** a web app to manage store-credit ("pay later") sales for a real small business: customers, receivables, partial payments, a 0–100 default-risk score, a daily collection queue, a risk-adjusted cash-flow forecast and automatic WhatsApp reminders. Next.js (App Router + Server Actions), Supabase (PostgreSQL + RLS + Auth), 98 automated tests.
 
 > Sistema web para controlar **vendas a prazo ("fiado")**: quem deve, quanto, até quando — e quem tem mais risco de não pagar.
 
-*English summary: a web app to manage store-credit ("pay later") sales — customers, receivables, partial payments, default-risk scoring and, on the roadmap, WhatsApp collection reminders and a cash-flow forecast. Built with Next.js (App Router + Server Actions) and Supabase (PostgreSQL).*
-
-**Status:** 🚧 em desenvolvimento — Fases 1 a 9 concluídas (ajuste fino dos parâmetros com dados reais fica pra depois do fechamento com o cliente).
+**Status:** 🚧 em desenvolvimento — Fases 1 a 9 concluídas, Fase 10 (login) em andamento (ajuste fino dos parâmetros com dados reais fica pra depois do fechamento com o cliente).
 
 ---
 
@@ -51,7 +61,7 @@ Para cada cliente: **previsão = saldo em aberto × chance de pagar**, com chanc
 
 | Decisão | Motivo |
 |---|---|
-| **Sem tela de login; todo acesso ao banco é server-side** (Server Components / Server Actions com a chave `service_role`) | Ferramenta de um único negócio, sem multiusuário. A chave nunca chega ao navegador. Se um dia houver mais de um usuário, o próximo passo é adicionar autenticação. |
+| **Login com Supabase Auth, conferido em duas camadas** (`proxy.js` + `exigirLogin()` em cada Server Action) | O proxy manda quem não está logado para `/login`, mas Server Actions são endpoints que podem ser chamados direto; por isso cada uma confere a sessão de novo (`getUser()`, que valida no servidor de autenticação, não só o cookie) antes de usar a chave `service_role`, que nunca chega ao navegador. |
 | **RLS ligado em todas as tabelas, sem nenhuma política** | Bloqueia totalmente a chave pública (`anon`) caso ela seja usada por engano no navegador. |
 | **Pagamentos em tabela própria** (uma linha por pagamento), não um campo acumulado | Dá histórico, permite forma de pagamento diferente por parcela e corrigir um lançamento sem bagunçar o total. |
 | **Saldo calculado numa view SQL** (`titulos_com_saldo`) | Fonte única da verdade: `valor_pago`, `valor_restante`, `dias_atraso` e `status` nunca são recalculados à mão nas telas. |
@@ -137,6 +147,7 @@ Além das tabelas, a view `titulos_com_saldo` entrega cada título já com saldo
 | 7 | **Relatório semanal** (`/relatorio`): vendido, recebido, clientes novos, títulos que atrasaram e mensagens de WhatsApp mandadas, últimos 7 dias comparados com os 7 anteriores | ✅ |
 | 8 | **Redesign visual**: painel vermelho/marca, cartões "glass", Manrope, animações — port de um protótipo do MagicPatterns, incluindo as telas novas **Cobrança** (`/cobranca`, pausar/retomar a régua) e **Ajustes** (`/ajustes`, números de risco e cobrança com prévia ao vivo) (ver [`DESIGN.md`](DESIGN.md)) | ✅ |
 | 9 | Testes finais (revisão de código, correções e teste de uso real) e parâmetros padrão em uso. Ajuste fino com dados reais fica pra depois do fechamento com o cliente | ✅ |
+| 10 | **Login e segurança**: Supabase Auth, portão no `proxy.js`, sessão conferida em cada Server Action, cabeçalhos de segurança, CodeQL, Dependabot e varredura de segredos no CI (ver [`SECURITY.md`](SECURITY.md)). Próximo passo: separar os dados por empresa (multi-tenant) | 🚧 |
 
 ## Como rodar localmente
 
@@ -147,7 +158,9 @@ Pré-requisitos: Node.js 20+ e um projeto no [Supabase](https://supabase.com) (o
    *(Se você já tinha criado o banco antes da correção de fuso horário, rode também [`supabase/correcao-fuso.sql`](supabase/correcao-fuso.sql).)*
 3. Copie `.env.local.example` para `.env.local` e preencha (Supabase → Project Settings → API):
    - `SUPABASE_URL` → Project URL
-   - `SUPABASE_SERVICE_ROLE_KEY` → chave **service_role** (não a "anon")
+   - `SUPABASE_SERVICE_ROLE_KEY` → chave **service_role**
+   - `SUPABASE_ANON_KEY` → chave **anon** (usada só no servidor, para o login)
+   - Rode também [`supabase/multi-tenant-auth.sql`](supabase/multi-tenant-auth.sql) e crie um usuário em **Authentication → Users**.
 4. `npm run dev` e abra <http://localhost:3000>
 
 Testes automáticos (motor de risco, busca, tela "Hoje" e previsão de caixa): `npm test`.
@@ -224,10 +237,6 @@ supabase/
   adicionar-pausa-whatsapp.sql  Coluna do botão "Pausar envios", para bancos já existentes
 ```
 
-## Screenshots
-
-Serão adicionadas após o redesign visual (Fase 8), com dados fictícios.
-
 ## Autor
 
-Desenvolvido por **Kaue Souza**.
+Desenvolvido por **Kauê Souza** · [LinkedIn](https://www.linkedin.com/in/kauesouzaproti/) · [GitHub](https://github.com/Kauesouzavr)
