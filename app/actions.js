@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '../lib/supabase-server';
 import { MARCA_COBRANCA_MANUAL } from '../lib/hoje';
 import { lerCampo, plural } from '../lib/util';
+import { exigirLogin } from '../lib/auth-server';
 
 // Volta pra tela "Hoje", opcionalmente com uma mensagem de sucesso (ok) ou de
 // erro (erro) no topo.
@@ -15,6 +16,7 @@ function voltarParaHoje(tipo, mensagem) {
 // Botão "Já cobrei": grava que o cliente foi cobrado agora. Ele sai da fila
 // por `dias_repetir_cobranca` dias.
 export async function registrarCobranca(formData) {
+  await exigirLogin();
   const clienteId = lerCampo(formData, 'cliente_id');
 
   const supabase = getSupabaseServerClient();
@@ -76,6 +78,7 @@ export async function registrarCobranca(formData) {
 // Botão "Desfazer" (caso o "Já cobrei" tenha sido clicado por engano). Só apaga
 // cobranças feitas pelo botão, nunca mensagens enviadas pelo sistema.
 export async function desfazerCobranca(formData) {
+  await exigirLogin();
   const cobrancaId = lerCampo(formData, 'cobranca_id');
 
   const supabase = getSupabaseServerClient();

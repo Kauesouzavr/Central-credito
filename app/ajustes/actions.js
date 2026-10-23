@@ -2,10 +2,12 @@
 
 import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '../../lib/supabase-server';
+import { exigirLogin } from '../../lib/auth-server';
 
 // Chamada direto (não via <form>), com os números do rascunho já validados
 // no cliente — por isso recebe um objeto, não FormData.
 export async function salvarAjustes(dados) {
+  await exigirLogin();
   const supabase = getSupabaseServerClient();
 
   const { error } = await supabase
