@@ -1,8 +1,10 @@
 import { getSupabaseServerClient } from '../../../lib/supabase-server';
 import { buscarTudo } from '../../../lib/carregar-risco';
 import { gerarCsvClientes } from '../../../lib/csv';
+import { exigirLogin } from '../../../lib/auth-server';
 
 export async function GET() {
+  await exigirLogin();
   const supabase = getSupabaseServerClient();
 
   const [clientes, titulos] = await Promise.all([
