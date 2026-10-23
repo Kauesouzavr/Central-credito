@@ -9,8 +9,10 @@ import {
   lerCampo,
   lerValor,
 } from '../../../../lib/util';
+import { exigirLogin } from '../../../../lib/auth-server';
 
 export async function adicionarCompra(formData) {
+  await exigirLogin();
   const clienteId = lerCampo(formData, 'cliente_id');
   const produto = lerCampo(formData, 'produto');
   const dataVencimento = lerCampo(formData, 'data_vencimento');

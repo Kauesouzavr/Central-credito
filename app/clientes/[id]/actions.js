@@ -10,12 +10,14 @@ import {
   lerValor,
   paraCentavos,
 } from '../../../lib/util';
+import { exigirLogin } from '../../../lib/auth-server';
 
 function soDigitos(telefone) {
   return String(telefone ?? '').replace(/\D/g, '');
 }
 
 export async function atualizarCliente(formData) {
+  await exigirLogin();
   const clienteId = lerCampo(formData, 'cliente_id');
   const nome = lerCampo(formData, 'nome');
   const telefone = lerCampo(formData, 'telefone');
@@ -69,6 +71,7 @@ export async function atualizarCliente(formData) {
 }
 
 export async function excluirCliente(formData) {
+  await exigirLogin();
   const clienteId = lerCampo(formData, 'cliente_id');
 
   const supabase = getSupabaseServerClient();
@@ -90,6 +93,7 @@ function voltarParaFicha(clienteId, tipo, mensagem) {
 }
 
 export async function registrarPagamentoParcial(formData) {
+  await exigirLogin();
   const clienteId = lerCampo(formData, 'cliente_id');
   const tituloId = lerCampo(formData, 'titulo_id');
   const formaPagamento = lerCampo(formData, 'forma_pagamento');
@@ -149,6 +153,7 @@ export async function registrarPagamentoParcial(formData) {
 }
 
 export async function marcarTituloComoPago(formData) {
+  await exigirLogin();
   const clienteId = lerCampo(formData, 'cliente_id');
   const tituloId = lerCampo(formData, 'titulo_id');
   const formaEscolhida = lerCampo(formData, 'forma_pagamento');
@@ -185,6 +190,7 @@ export async function marcarTituloComoPago(formData) {
 }
 
 export async function marcarTudoComoPago(formData) {
+  await exigirLogin();
   const clienteId = lerCampo(formData, 'cliente_id');
   const formaEscolhida = lerCampo(formData, 'forma_pagamento');
 

@@ -4,12 +4,14 @@ import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '../../../lib/supabase-server';
 import { FORMAS_PAGAMENTO, formatarTelefoneE164, hojeBrasil, lerCampo, lerValor } from '../../../lib/util';
 import { montarMensagemWhatsApp } from '../../../lib/mensagens-whatsapp';
+import { exigirLogin } from '../../../lib/auth-server';
 
 function soDigitos(telefone) {
   return String(telefone ?? '').replace(/\D/g, '');
 }
 
 export async function criarCliente(formData) {
+  await exigirLogin();
   const nome = lerCampo(formData, 'nome');
   const telefone = lerCampo(formData, 'telefone');
   const telefoneReserva = lerCampo(formData, 'telefone_reserva');

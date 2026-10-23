@@ -2,8 +2,10 @@
 
 import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '../../lib/supabase-server';
+import { exigirLogin } from '../../lib/auth-server';
 
 export async function alternarEnvio() {
+  await exigirLogin();
   const supabase = getSupabaseServerClient();
 
   const { data: config, error: erroConfig } = await supabase
@@ -29,6 +31,7 @@ export async function alternarEnvio() {
 }
 
 export async function alternarEnvioAutomatico() {
+  await exigirLogin();
   const supabase = getSupabaseServerClient();
 
   const { data: config, error: erroConfig } = await supabase
@@ -62,6 +65,7 @@ export async function alternarEnvioAutomatico() {
 // Remove do histórico uma mensagem que não foi enviada. Só apaga status 'erro':
 // nunca mexe em mensagem já enviada nem na fila.
 export async function apagarMensagemErro(formData) {
+  await exigirLogin();
   const mensagemId = (formData.get('mensagem_id') || '').toString().trim();
 
   const supabase = getSupabaseServerClient();
@@ -79,6 +83,7 @@ export async function apagarMensagemErro(formData) {
 // 'pendente' e é mandada no próximo ciclo do bot (scripts/whatsapp-bot.mjs) —
 // o site não fala com o Baileys diretamente, são processos separados.
 export async function aprovarEnvio(formData) {
+  await exigirLogin();
   const mensagemId = (formData.get('mensagem_id') || '').toString().trim();
 
   const supabase = getSupabaseServerClient();
