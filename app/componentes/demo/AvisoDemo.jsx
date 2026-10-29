@@ -10,20 +10,23 @@ import { classesBotao } from '../../../lib/buttonStyles';
 // Nasce ABERTA no servidor (o sistema nunca aparece antes do aviso) e fecha
 // depois da hidratação se nesta sessão do navegador já houve aceite. Só fecha
 // no clique do botão: sem Esc e sem clique fora.
-const CHAVE_ACEITE = 'aviso-demo-aceito';
-
-export default function AvisoDemo() {
+//
+// O componente é genérico de propósito: os textos e a chave do aceite chegam
+// por props, vindos do app/layout.js (servidor), que só os envia com
+// DEMO_MODE=1. Assim o código baixado pelo sistema real não carrega nenhum
+// texto da demo.
+export default function AvisoDemo({ etiqueta, titulo, texto, botao: rotuloBotao, chaveAceite }) {
   const [aberto, setAberto] = useState(true);
   const botao = useRef(null);
 
   useEffect(() => {
     try {
-      if (sessionStorage.getItem(CHAVE_ACEITE) === '1') setAberto(false);
+      if (sessionStorage.getItem(chaveAceite) === '1') setAberto(false);
     } catch {
       // Sem sessionStorage (navegação privada restrita etc.): o aviso fica só
       // em memória, então volta a cada carregamento da página.
     }
-  }, []);
+  }, [chaveAceite]);
 
   useEffect(() => {
     if (!aberto) return undefined;
@@ -37,7 +40,7 @@ export default function AvisoDemo() {
 
   function aceitar() {
     try {
-      sessionStorage.setItem(CHAVE_ACEITE, '1');
+      sessionStorage.setItem(chaveAceite, '1');
     } catch {
       // ver comentário acima: segue só em memória.
     }
@@ -59,22 +62,20 @@ export default function AvisoDemo() {
     <div
       role="dialog"
       aria-modal="true"
-      aria-labelledby="aviso-demo-titulo"
-      aria-describedby="aviso-demo-texto"
+      aria-labelledby="aviso-titulo"
+      aria-describedby="aviso-texto"
       onKeyDown={manterFoco}
       className="fixed inset-0 z-[1000] flex items-center justify-center overflow-y-auto bg-ink px-6 py-10 text-white"
     >
       <div className="flex w-full max-w-3xl flex-col items-center text-center">
         <span className="rounded-full border border-white/30 px-4 py-1.5 text-sm font-bold uppercase tracking-[0.2em] text-brand-200">
-          DEMONSTRAÇÃO
+          {etiqueta}
         </span>
-        <h2 id="aviso-demo-titulo" className="mt-8 text-4xl font-extrabold leading-tight tracking-tight sm:text-6xl">
-          ISSO É APENAS UMA DEMO
+        <h2 id="aviso-titulo" className="mt-8 text-4xl font-extrabold leading-tight tracking-tight sm:text-6xl">
+          {titulo}
         </h2>
-        <p id="aviso-demo-texto" className="mt-8 max-w-2xl text-lg leading-relaxed text-white/85 sm:text-xl">
-          Este não é o sistema do cliente. O site principal está sob o comando de um cliente e é totalmente separado
-          deste. Aqui tudo é fictício: clientes, valores e mensagens foram inventados, nenhuma mensagem de WhatsApp é
-          enviada e os dados são restaurados todo dia.
+        <p id="aviso-texto" className="mt-8 max-w-2xl text-lg leading-relaxed text-white/85 sm:text-xl">
+          {texto}
         </p>
         <button
           ref={botao}
@@ -82,7 +83,7 @@ export default function AvisoDemo() {
           onClick={aceitar}
           className={classesBotao('primary', 'lg', 'mt-10 w-full sm:w-auto sm:px-10')}
         >
-          Entendi, ver a demonstração
+          {rotuloBotao}
         </button>
       </div>
     </div>

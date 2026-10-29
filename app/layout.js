@@ -8,6 +8,17 @@ import { demoAtiva } from '../lib/demo-guard';
 // Demo pública: link da faixa do topo (README do repositório).
 const LINK_README = 'https://github.com/Kauesouzavr/Central-credito#readme';
 
+// Conteúdo da tela de aviso. Fica aqui (servidor) e só é enviado ao navegador
+// quando DEMO_MODE=1: o componente AvisoDemo em si não tem nenhum texto.
+const AVISO_DEMO = {
+  etiqueta: 'DEMONSTRAÇÃO',
+  titulo: 'ISSO É APENAS UMA DEMO',
+  texto:
+    'Este não é o sistema do cliente. O site principal está sob o comando de um cliente e é totalmente separado deste. Aqui tudo é fictício: clientes, valores e mensagens foram inventados, nenhuma mensagem de WhatsApp é enviada e os dados são restaurados todo dia.',
+  botao: 'Entendi, ver a demonstração',
+  chaveAceite: 'aviso-demo-aceito',
+};
+
 export const metadata = {
   title: 'Central de Crédito',
 };
@@ -34,7 +45,7 @@ export default async function RootLayout({ children }) {
   return (
     <html lang="pt-BR">
       <body>
-        {demo && <AvisoDemo />}
+        {demo && <AvisoDemo {...AVISO_DEMO} />}
         {demo && (
           <div className="bg-ink px-4 py-2 text-center text-sm font-medium text-white">
             Demonstração com dados fictícios, restaurados todo dia. Nenhuma mensagem de WhatsApp é enviada.{' '}
