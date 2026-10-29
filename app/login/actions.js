@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { getSupabaseUsuarioClient } from '../../lib/auth-server';
-import { demoAtiva } from '../../lib/demo-guard';
+import { entrarComoVisitante } from '../../lib/demo-entrada';
 
 export async function entrar(formData) {
   const email = (formData.get('email') || '').toString().trim();
@@ -27,30 +27,14 @@ export async function entrar(formData) {
   redirect('/');
 }
 
-// Demo pública: botão "Explorar a demonstração". Entra com o usuário
-// visitante direto no servidor — e-mail e senha vêm das variáveis de ambiente
-// e nunca chegam ao navegador. Sem DEMO_MODE=1 recusa (no sistema real essa
-// action não faz nada).
+// Demo pública: botão "Explorar a demonstração" da tela /login (reserva: na
+// demo o proxy já entra sozinho, ver app/api/demo/entrar/route.js). Sem
+// DEMO_MODE=1 recusa — no sistema real essa action não faz nada.
 export async function entrarNaDemo() {
-  const email = process.env.DEMO_USER_EMAIL;
-  const senha = process.env.DEMO_USER_PASSWORD;
-
-  if (!demoAtiva() || !email || !senha) {
-    redirect(`/login?erro=${encodeURIComponent('A demonstração não está disponível.')}`);
-  }
-
-  const supabase = await getSupabaseUsuarioClient();
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha });
-
-  if (error) {
+  const entrou = await entrarComoVisitante();
+  if (!entrou) {
     redirect(`/login?erro=${encodeURIComponent('Não foi possível abrir a demonstração agora. Tente de novo em instantes.')}`);
   }
-
-  // Mesmo upsert do login normal, só que já com o nome da loja fictícia.
-  await supabase
-    .from('perfis')
-    .upsert({ user_id: data.user.id, nome_negocio: 'Loja Exemplo' }, { onConflict: 'user_id', ignoreDuplicates: true });
-
   redirect('/');
 }
 

@@ -23,7 +23,7 @@ function estaAtivo(pathname, href) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export default function TopNav({ nomeNegocio }) {
+export default function TopNav({ nomeNegocio, demo = false }) {
   const pathname = usePathname();
 
   if (pathname === '/login') return null;
@@ -67,15 +67,18 @@ export default function TopNav({ nomeNegocio }) {
             );
           })}
         </nav>
-        <form action={sair}>
-          <button
-            type="submit"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink-faint transition-colors duration-150 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-200"
-          >
-            <LogOutIcon className="h-5 w-5" aria-hidden="true" />
-            <span className="sr-only">Sair</span>
-          </button>
-        </form>
+        {/* Na demo ninguém "sai": sem sessão o proxy entra de novo sozinho. */}
+        {!demo && (
+          <form action={sair}>
+            <button
+              type="submit"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink-faint transition-colors duration-150 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-200"
+            >
+              <LogOutIcon className="h-5 w-5" aria-hidden="true" />
+              <span className="sr-only">Sair</span>
+            </button>
+          </form>
+        )}
       </div>
     </header>
   );

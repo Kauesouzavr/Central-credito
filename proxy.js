@@ -13,11 +13,13 @@ import { demoAtiva } from './lib/demo-guard.js';
 // recomendação oficial do @supabase/ssr, porque só o cookie pode ser
 // forjado — getUser() confere direto com o servidor de autenticação.
 export default async function proxy(request) {
-  // Demo pública: a rota de restauração diária é chamada pelo cron da Vercel,
-  // que não tem sessão — então passa direto. Ela se protege sozinha (exige
-  // "Authorization: Bearer <CRON_SECRET>") e, fora da demo, esta exceção nem
-  // existe: sem DEMO_MODE=1 essa rota continua atrás do login como todas.
-  if (demoAtiva() && request.nextUrl.pathname === '/api/demo/reset') {
+  // Demo pública (só com DEMO_MODE=1; sem isso nada abaixo existe e tudo
+  // segue atrás do login como sempre):
+  //   - /api/demo/reset é chamada pelo cron da Vercel, que não tem sessão, e
+  //     se protege sozinha (exige "Authorization: Bearer <CRON_SECRET>");
+  //   - /api/demo/entrar é quem abre a sessão do visitante (ver abaixo).
+  const demo = demoAtiva();
+  if (demo && (request.nextUrl.pathname === '/api/demo/reset' || request.nextUrl.pathname === '/api/demo/entrar')) {
     return NextResponse.next();
   }
 
@@ -44,6 +46,16 @@ export default async function proxy(request) {
 
   if (!user && !naTelaDeLogin) {
     const url = request.nextUrl.clone();
+    if (demo) {
+      // Na demo ninguém vê a tela de login: quem chega sem sessão entra
+      // sozinho como visitante e volta pra página que pediu. 303 pra um POST
+      // (Server Action com a sessão vencida) virar GET na volta.
+      const pedido = request.nextUrl.pathname + request.nextUrl.search;
+      url.pathname = '/api/demo/entrar';
+      url.search = '';
+      url.searchParams.set('next', pedido);
+      return NextResponse.redirect(url, 303);
+    }
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
