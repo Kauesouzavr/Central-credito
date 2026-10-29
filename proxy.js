@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
+import { demoAtiva } from './lib/demo-guard.js';
 
 // Fase 10: portão de login. Roda antes de qualquer página — quem não
 // estiver logado é mandado pra /login; quem já estiver logado não vê a
@@ -12,6 +13,14 @@ import { NextResponse } from 'next/server';
 // recomendação oficial do @supabase/ssr, porque só o cookie pode ser
 // forjado — getUser() confere direto com o servidor de autenticação.
 export default async function proxy(request) {
+  // Demo pública: a rota de restauração diária é chamada pelo cron da Vercel,
+  // que não tem sessão — então passa direto. Ela se protege sozinha (exige
+  // "Authorization: Bearer <CRON_SECRET>") e, fora da demo, esta exceção nem
+  // existe: sem DEMO_MODE=1 essa rota continua atrás do login como todas.
+  if (demoAtiva() && request.nextUrl.pathname === '/api/demo/reset') {
+    return NextResponse.next();
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
