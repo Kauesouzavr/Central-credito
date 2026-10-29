@@ -5,6 +5,9 @@ import { getSupabaseServerClient } from '../../../lib/supabase-server';
 import { FORMAS_PAGAMENTO, formatarTelefoneE164, hojeBrasil, lerCampo, lerValor } from '../../../lib/util';
 import { montarMensagemWhatsApp } from '../../../lib/mensagens-whatsapp';
 import { exigirLogin } from '../../../lib/auth-server';
+import { demoAtiva } from '../../../lib/demo-guard';
+
+const LIMITE_CLIENTES_DEMO = 60;
 
 function soDigitos(telefone) {
   return String(telefone ?? '').replace(/\D/g, '');
@@ -40,6 +43,20 @@ export async function criarCliente(formData) {
   }
 
   const supabase = getSupabaseServerClient();
+
+  // Demo pública: limite anti-abuso. Os dados são restaurados todo dia, mas
+  // até lá um visitante não pode encher o banco gratuito.
+  if (demoAtiva()) {
+    const { count, error: erroContagem } = await supabase.from('clientes').select('id', { count: 'exact', head: true });
+    if (erroContagem || (count ?? 0) >= LIMITE_CLIENTES_DEMO) {
+      redirect(
+        `/clientes?erro=${encodeURIComponent(
+          `A demonstração aceita até ${LIMITE_CLIENTES_DEMO} clientes. Os dados são restaurados todo dia.`
+        )}`
+      );
+      return;
+    }
+  }
 
   const digitosTelefone = soDigitos(telefone);
   const { data: existentes, error: erroBusca } = await supabase

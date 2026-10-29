@@ -1,7 +1,12 @@
 import './globals.css';
 import TopNav from './componentes/TopNav';
 import { Toaster } from './componentes/ui/Toaster';
+import AvisoDemo from './componentes/demo/AvisoDemo';
 import { getSupabaseUsuarioClient } from '../lib/auth-server';
+import { demoAtiva } from '../lib/demo-guard';
+
+// Demo pública: link da faixa do topo (README do repositório).
+const LINK_README = 'https://github.com/Kauesouzavr/Central-credito#readme';
 
 export const metadata = {
   title: 'Central de Crédito',
@@ -22,10 +27,27 @@ async function buscarNomeNegocio() {
 
 export default async function RootLayout({ children }) {
   const nomeNegocio = await buscarNomeNegocio();
+  // Lido aqui, no servidor, a cada requisição: nada disso vai pro navegador
+  // além do resultado (o aviso e a faixa só existem com DEMO_MODE=1).
+  const demo = demoAtiva();
 
   return (
     <html lang="pt-BR">
       <body>
+        {demo && <AvisoDemo />}
+        {demo && (
+          <div className="bg-ink px-4 py-2 text-center text-sm font-medium text-white">
+            Demonstração com dados fictícios, restaurados todo dia. Nenhuma mensagem de WhatsApp é enviada.{' '}
+            <a
+              href={LINK_README}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-brand-200 underline underline-offset-2 hover:text-white"
+            >
+              Ver o README
+            </a>
+          </div>
+        )}
         <div
           aria-hidden="true"
           style={{ display: 'none' }}

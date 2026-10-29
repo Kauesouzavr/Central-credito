@@ -1,5 +1,6 @@
 import { GaugeIcon } from 'lucide-react';
-import { entrar } from './actions';
+import { entrar, entrarNaDemo } from './actions';
+import { demoAtiva } from '../../lib/demo-guard';
 import { TextField } from '../componentes/ui/TextField';
 import { Button } from '../componentes/ui/Button';
 import { GlassPanel } from '../componentes/ui/GlassPanel';
@@ -9,6 +10,9 @@ export const metadata = {
 };
 
 export default function Login() {
+  // Demo pública: com DEMO_MODE=1 aparece o botão que entra sozinho.
+  const demo = demoAtiva();
+
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md items-center">
       <GlassPanel strong className="w-full p-8 sm:p-10">
@@ -18,6 +22,16 @@ export default function Login() {
           </span>
           <span className="text-lg font-extrabold tracking-tight text-ink">Central de Crédito</span>
         </div>
+        {demo && (
+          <form action={entrarNaDemo} className="mt-6">
+            <Button type="submit" size="lg" className="w-full">
+              Explorar a demonstração
+            </Button>
+            <p className="mt-3 text-center text-sm text-ink-soft">
+              Sem cadastro. Todos os dados são fictícios.
+            </p>
+          </form>
+        )}
         <h1 className="mt-6 text-2xl font-extrabold tracking-tight text-ink">Entrar</h1>
         <p className="mt-1 text-ink-soft">Use o e-mail e a senha da sua conta.</p>
         <form action={entrar} className="mt-6 grid gap-5">
