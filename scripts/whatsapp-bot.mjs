@@ -36,6 +36,7 @@ import { montarMensagemWhatsApp } from '../lib/mensagens-whatsapp.js';
 import { podeEnviarMais, atrasoAleatorioMs } from '../lib/limite-envio.js';
 import { formatarTelefoneE164, hojeBrasil, inicioDoDiaBrasil } from '../lib/util.js';
 import { MARCA_COBRANCA_MANUAL } from '../lib/hoje.js';
+import { demoAtiva } from '../lib/demo-guard.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PASTA_SESSAO = path.join(__dirname, '..', 'whatsapp-auth');
@@ -52,6 +53,13 @@ const ARQUIVO_PULSO = path.join(__dirname, '..', 'whatsapp-bot.heartbeat');
 // RestartInterval, já configurados) religa — mais simples e mais confiável
 // do que ter um segundo processo "vigia" só pra isso.
 const LIMITE_SEM_PULSO_MS = 20 * 60 * 1000;
+
+// Demo pública: nenhuma mensagem de WhatsApp pode sair de lá. O bot recusa
+// iniciar (antes de conectar em qualquer coisa) se DEMO_MODE=1.
+if (demoAtiva()) {
+  console.error('DEMO_MODE=1: o bot do WhatsApp não roda na demonstração (nenhuma mensagem é enviada).');
+  process.exit(1);
+}
 
 const url = process.env.SUPABASE_URL;
 const chave = process.env.SUPABASE_SERVICE_ROLE_KEY;
